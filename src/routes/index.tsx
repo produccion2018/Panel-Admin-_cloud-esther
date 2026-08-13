@@ -1,24 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { ToothLogo } from "@/components/admin/logo";
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Cloud Esther — Software en la nube para clínicas dentales" },
+      {
+        name: "description",
+        content:
+          "Cloud Esther centraliza agenda, historias clínicas y asistencia con IA para clínicas dentales.",
+      },
+      { property: "og:title", content: "Cloud Esther — Software para clínicas dentales" },
+      {
+        property: "og:description",
+        content: "Agenda, historias clínicas y asistencia con IA en una sola plataforma.",
+      },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
+// Sitio público. No debe contener ningún enlace al panel interno (/admin).
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-6 text-center">
+      <div
+        className="flex h-16 w-16 items-center justify-center rounded-2xl text-primary-foreground"
+        style={{ background: "var(--gradient-primary)" }}
+      >
+        <ToothLogo className="h-9 w-9" />
+      </div>
+      <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">Cloud Esther</h1>
+      <p className="max-w-md text-muted-foreground">
+        Software en la nube para clínicas dentales: agenda, historias clínicas y asistencia con IA.
+      </p>
     </div>
   );
 }
