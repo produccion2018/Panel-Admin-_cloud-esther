@@ -14,7 +14,7 @@ import {
 import type { ReactNode } from "react";
 
 import { BrandMark } from "./logo";
-import { useRole, roleLabel, type AdminRole } from "./role";
+import { canAccess, useRole, roleLabel, roleInitials, type AdminRole } from "./role";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-type NavItem = { to: string; label: string; icon: LucideIcon; ownerOnly?: boolean };
+// El acceso por rol de cada ítem se define en role.tsx (sectionAccess).
+type NavItem = { to: string; label: string; icon: LucideIcon };
 
 const nav: { section: string; items: NavItem[] }[] = [
   {
@@ -49,8 +50,8 @@ const nav: { section: string; items: NavItem[] }[] = [
   {
     section: "Sistema",
     items: [
-      { to: "/admin/cuenta", label: "Mi cuenta", icon: Settings, ownerOnly: true },
-      { to: "/admin/accesos", label: "Gestión de accesos", icon: ShieldCheck, ownerOnly: true },
+      { to: "/admin/cuenta", label: "Mi cuenta", icon: Settings },
+      { to: "/admin/accesos", label: "Gestión de accesos", icon: ShieldCheck },
     ],
   },
 ];
@@ -77,7 +78,7 @@ export function AdminShell({
         </div>
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
           {nav.map((group) => {
-            const items = group.items.filter((i) => !(i.ownerOnly && role !== "owner"));
+            const items = group.items.filter((i) => canAccess(role, i.to));
             if (!items.length) return null;
             return (
               <div key={group.section}>
@@ -113,16 +114,18 @@ export function AdminShell({
           <div className="flex items-center gap-3 rounded-lg px-2 py-2">
             <Avatar className="h-9 w-9">
               <AvatarFallback className="bg-sidebar-accent text-xs text-sidebar-accent-foreground">
-                {role === "owner" ? "ER" : "MA"}
+                {roleInitials[role]}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-sm font-semibold">
-                {role === "owner" ? "Esteban Ruiz" : "Martín Alvarez"}
-              </p>
-              <p className="truncate text-[11px] text-sidebar-foreground/60">{roleLabel[role]}</p>
+              {/* TODO backend: mostrar acá el nombre real del usuario logueado */}
+              <p className="truncate text-sm font-semibold">{roleLabel[role]}</p>
+              <p className="truncate text-[11px] text-sidebar-foreground/60">Equipo Cloud Esther</p>
             </div>
-            <Link to="/admin/login" className="text-sidebar-foreground/60 hover:text-sidebar-foreground">
+            <Link
+              to="/admin/login"
+              className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
+            >
               <LogOut className="h-4 w-4" />
             </Link>
           </div>
@@ -145,18 +148,23 @@ export function AdminShell({
             </div>
             <div className="flex items-center gap-2">
               {actions}
-              <div className="hidden items-center gap-2 sm:flex">
-                <span className="text-xs text-muted-foreground">Vista de rol</span>
-                <Select value={role} onValueChange={(v) => setRole(v as AdminRole)}>
-                  <SelectTrigger className="h-9 w-[210px] bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="owner">Dueño (acceso total)</SelectItem>
-                    <SelectItem value="partner">Socio administrativo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Selector solo para desarrollo: no aparece en el build de producción. */}
+              {import.meta.env.DEV && (
+                <div className="hidden items-center gap-2 sm:flex">
+                  <span className="text-xs text-muted-foreground">Vista de rol (dev)</span>
+                  <Select value={role} onValueChange={(v) => setRole(v as AdminRole)}>
+                    <SelectTrigger className="h-9 w-[210px] bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="owner">Dueño (acceso total)</SelectItem>
+                      <SelectItem value="partner">Socio administrativo</SelectItem>
+                      <SelectItem value="support">Soporte técnico</SelectItem>
+                      <SelectItem value="customer-care">Atención al cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <Button variant="outline" size="sm" asChild>
                 <Link to="/admin/login">Salir</Link>
               </Button>

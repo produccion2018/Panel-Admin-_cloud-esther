@@ -11,10 +11,9 @@ export function RestrictedView() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
             <ShieldAlert className="h-6 w-6" />
           </div>
-          <p className="text-lg font-bold">Sólo para el Dueño</p>
+          <p className="text-lg font-bold">No tenés acceso a esta sección</p>
           <p className="text-sm text-muted-foreground">
-            El rol Socio administrativo puede ver clínicas, pagos y consumo de IA, pero no la
-            configuración de cuenta ni la gestión de accesos.
+            Tu rol no incluye este módulo. Si lo necesitás para tu trabajo, pedile acceso al Dueño.
           </p>
         </CardContent>
       </Card>

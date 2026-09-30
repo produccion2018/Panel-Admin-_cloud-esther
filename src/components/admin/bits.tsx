@@ -10,6 +10,7 @@ export function StatusBadge({ status }: { status: PaymentStatus }) {
     "al-dia": "bg-success/12 text-success border-success/25",
     pendiente: "bg-warning/18 text-warning-foreground border-warning/40",
     mora: "bg-destructive/10 text-destructive border-destructive/25",
+    suspendida: "bg-muted text-muted-foreground border-border",
   };
   return (
     <Badge variant="outline" className={cn("gap-1.5 font-semibold", styles[status])}>
@@ -19,6 +20,7 @@ export function StatusBadge({ status }: { status: PaymentStatus }) {
           status === "al-dia" && "bg-success",
           status === "pendiente" && "bg-warning",
           status === "mora" && "bg-destructive",
+          status === "suspendida" && "bg-muted-foreground",
         )}
       />
       {paymentLabels[status]}
@@ -42,7 +44,11 @@ export function KpiCard({
   return (
     <Card
       className={cn("border-border/70", accent && "border-transparent text-primary-foreground")}
-      style={accent ? { background: "var(--gradient-primary)", boxShadow: "var(--shadow-elegant)" } : { boxShadow: "var(--shadow-card)" }}
+      style={
+        accent
+          ? { background: "var(--gradient-primary)", boxShadow: "var(--shadow-elegant)" }
+          : { boxShadow: "var(--shadow-card)" }
+      }
     >
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
