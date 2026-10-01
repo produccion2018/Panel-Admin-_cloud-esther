@@ -1,20 +1,16 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { KeyRound, Lock, ShieldCheck, User } from "lucide-react";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Eye, EyeOff, Loader2, Lock, TimerOff, User } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
 
-import { ToothLogo } from "@/components/admin/logo";
+import { MarcoAcceso } from "@/components/admin/acceso";
+import { roleLabel } from "@/components/admin/role";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { CON_BACKEND, iniciarSesionAdmin } from "@/lib/admin/api";
+import { ADMINS_INICIALES, CLAVES_PRUEBA } from "@/lib/admin/datos-ejemplo";
+import { guardarSesion, motivoCierre } from "@/lib/admin/sesion";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
@@ -22,130 +18,148 @@ export const Route = createFileRoute("/admin/login")({
       { title: "Acceso interno — Cloud Esther Administración" },
       { name: "robots", content: "noindex, nofollow" },
       { name: "description", content: "Acceso restringido al panel de administración interna." },
-      { property: "og:title", content: "Acceso interno — Cloud Esther" },
-      { property: "og:description", content: "Acceso restringido." },
     ],
   }),
   component: AdminLogin,
 });
 
 function AdminLogin() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [clave, setClave] = useState("");
+  const [ver, setVer] = useState(false);
+  const [recordar, setRecordar] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(false);
+  const [inactividad, setInactividad] = useState(false);
+
+  useEffect(() => setInactividad(motivoCierre() === "inactividad"), []);
+
+  const entrar = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!email.trim() || !clave) return setError("Completá el correo y la contraseña.");
+    setCargando(true);
+    try {
+      const sesion = await iniciarSesionAdmin(email, clave);
+      guardarSesion(sesion, recordar);
+      void navigate({ to: "/admin" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo ingresar.");
+    } finally {
+      setCargando(false);
+    }
+  };
+
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
-      <div
-        className="relative hidden flex-col justify-between p-12 text-primary-foreground lg:flex"
-        style={{ background: "var(--gradient-primary)" }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
-            <ToothLogo className="h-7 w-7" />
-          </div>
-          <div className="leading-tight">
-            <p className="text-lg font-extrabold tracking-tight">Cloud Esther</p>
-            <p className="text-xs uppercase tracking-[0.18em] opacity-80">Administración</p>
-          </div>
-        </div>
-        <div className="max-w-md space-y-4">
-          <h2 className="text-4xl font-extrabold leading-tight tracking-tight">
-            Panel interno de superadministración
-          </h2>
-          <p className="text-sm leading-relaxed opacity-85">
-            Control del negocio: clínicas suscriptas, cobros, planes y consumo de IA de toda la
-            plataforma. Este acceso no es el panel de las clínicas clientes.
-          </p>
-        </div>
-        <p className="flex items-center gap-2 text-xs opacity-75">
-          <ShieldCheck className="h-4 w-4" /> Acceso restringido y auditado
+    <MarcoAcceso>
+      <h1 className="text-2xl font-extrabold tracking-tight">Ingreso del equipo</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Entrá con el correo y la contraseña de tu acceso interno.
+      </p>
+
+      {inactividad && (
+        <p className="mt-5 flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/15 px-3 py-2.5 text-xs font-medium text-warning-foreground">
+          <TimerOff className="mt-0.5 h-4 w-4 shrink-0" />
+          Tu sesión se cerró después de 30 minutos sin actividad. Volvé a ingresar.
         </p>
-      </div>
+      )}
 
-      <div className="flex items-center justify-center px-6 py-14">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex flex-col items-center gap-3 lg:hidden">
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl text-primary-foreground"
-              style={{ background: "var(--gradient-primary)" }}
+      <form className="mt-6 space-y-4" onSubmit={entrar} noValidate>
+        <div className="space-y-2">
+          <Label htmlFor="email">Correo</Label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nombre@cloudesther.com"
+              className="h-11 pl-9"
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="clave">Contraseña</Label>
+            <Link
+              to="/admin/recuperar"
+              className="text-xs font-semibold text-primary hover:underline"
             >
-              <ToothLogo className="h-8 w-8" />
-            </div>
-            <p className="text-lg font-extrabold tracking-tight">Cloud Esther</p>
+              ¿Olvidaste tu contraseña?
+            </Link>
           </div>
-
-          <h1 className="text-2xl font-extrabold tracking-tight">Ingreso de administradores</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sólo para el equipo interno de Cloud Esther.
-          </p>
-
-          <form className="mt-8 space-y-4" onSubmit={(e) => e.preventDefault()}>
-            <div className="space-y-2">
-              <Label htmlFor="user">Usuario</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input id="user" placeholder="esteban@cloudesther.com" className="pl-9" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pass">Contraseña</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input id="pass" type="password" placeholder="••••••••••" className="pl-9" />
-              </div>
-            </div>
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Checkbox id="remember" /> Recordarme
-              </label>
-              <ChangePasswordDialog />
-            </div>
-            <Button className="w-full" size="lg" asChild>
-              <Link to="/admin">Entrar al panel</Link>
-            </Button>
-          </form>
-
-          <p className="mt-8 text-center text-xs text-muted-foreground">
-            Maqueta visual — sin autenticación real conectada.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ChangePasswordDialog() {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button type="button" className="text-sm font-semibold text-primary hover:underline">
-          Cambiar contraseña
-        </button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-primary" /> Cambiar contraseña
-          </DialogTitle>
-          <DialogDescription>
-            Definí una nueva contraseña para tu acceso de administración.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="cur">Contraseña actual</Label>
-            <Input id="cur" type="password" placeholder="••••••••" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="new">Nueva contraseña</Label>
-            <Input id="new" type="password" placeholder="••••••••" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="rep">Repetir nueva contraseña</Label>
-            <Input id="rep" type="password" placeholder="••••••••" />
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="clave"
+              type={ver ? "text" : "password"}
+              autoComplete="current-password"
+              value={clave}
+              onChange={(e) => setClave(e.target.value)}
+              placeholder="Tu contraseña"
+              className="h-11 px-9"
+            />
+            <button
+              type="button"
+              onClick={() => setVer((v) => !v)}
+              aria-label={ver ? "Ocultar contraseña" : "Mostrar contraseña"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {ver ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
         </div>
-        <DialogFooter>
-          <Button className="w-full sm:w-auto">Guardar cambios</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Checkbox checked={recordar} onCheckedChange={(v) => setRecordar(v === true)} />
+          Mantener la sesión en este equipo
+        </label>
+
+        {error && (
+          <p
+            role="alert"
+            className="rounded-xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
+          >
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" className="h-11 w-full" disabled={cargando}>
+          {cargando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Entrar al panel
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        Por seguridad, la sesión se cierra tras 30 minutos sin actividad.
+      </p>
+
+      {/* Cuentas de prueba: solo en desarrollo y sin backend conectado. */}
+      {import.meta.env.DEV && !CON_BACKEND && (
+        <div className="mt-6 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.03] p-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
+            Cuentas de prueba (sin backend)
+          </p>
+          <div className="mt-2 grid gap-1.5">
+            {ADMINS_INICIALES.map((a) => (
+              <button
+                key={a.email}
+                type="button"
+                onClick={() => {
+                  setEmail(a.email);
+                  setClave(CLAVES_PRUEBA[a.email] ?? "");
+                }}
+                className="flex items-center justify-between rounded-lg bg-card px-2.5 py-1.5 text-left text-xs ring-1 ring-border transition hover:ring-primary/40"
+              >
+                <span className="font-semibold">{roleLabel[a.rol]}</span>
+                <span className="text-muted-foreground">{a.email}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </MarcoAcceso>
   );
 }

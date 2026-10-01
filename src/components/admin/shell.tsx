@@ -1,30 +1,28 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard,
   Building2,
   CreditCard,
-  Sparkles,
+  Database,
+  Eye,
+  LayoutDashboard,
   LifeBuoy,
+  LogOut,
+  Menu,
+  MonitorPlay,
+  Package,
   ScrollText,
   Settings,
   ShieldCheck,
-  LogOut,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { BrandMark } from "./logo";
-import { canAccess, useRole, roleLabel, roleInitials, type AdminRole } from "./role";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ROLES, canAccess, roleInitials, roleLabel, useRole, type AdminRole } from "./role";
+import { CON_BACKEND } from "@/lib/admin/api";
+import { cerrarSesionAdmin, useSesionAdmin } from "@/lib/admin/sesion";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 // El acceso por rol de cada ítem se define en role.tsx (sectionAccess).
@@ -34,9 +32,11 @@ const nav: { section: string; items: NavItem[] }[] = [
   {
     section: "Negocio",
     items: [
-      { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/admin", label: "Resumen", icon: LayoutDashboard },
+      { to: "/admin/demos", label: "Demos e interesados", icon: MonitorPlay },
       { to: "/admin/clinicas", label: "Clínicas clientes", icon: Building2 },
-      { to: "/admin/pagos", label: "Pagos y facturación", icon: CreditCard },
+      { to: "/admin/pagos", label: "Pagos y cobranza", icon: CreditCard },
+      { to: "/admin/planes", label: "Planes y precios", icon: Package },
       { to: "/admin/ia", label: "Consumo de IA", icon: Sparkles },
     ],
   },
@@ -44,17 +44,136 @@ const nav: { section: string; items: NavItem[] }[] = [
     section: "Operación",
     items: [
       { to: "/admin/soporte", label: "Tickets de soporte", icon: LifeBuoy },
-      { to: "/admin/actividad", label: "Logs de actividad", icon: ScrollText },
+      { to: "/admin/actividad", label: "Registro de actividad", icon: ScrollText },
     ],
   },
   {
-    section: "Sistema",
+    section: "Cuenta",
     items: [
-      { to: "/admin/cuenta", label: "Mi cuenta", icon: Settings },
-      { to: "/admin/accesos", label: "Gestión de accesos", icon: ShieldCheck },
+      { to: "/admin/cuenta", label: "Mi perfil y contraseña", icon: Settings },
+      { to: "/admin/accesos", label: "Equipo y accesos", icon: ShieldCheck },
     ],
   },
 ];
+
+function iniciales(nombre: string) {
+  return nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+}
+
+function Navegacion({ onIr }: { onIr?: () => void }) {
+  const { role } = useRole();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return (
+    <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+      {nav.map((group) => {
+        const items = group.items.filter((i) => canAccess(role, i.to));
+        if (!items.length) return null;
+        return (
+          <div key={group.section}>
+            <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-sidebar-foreground/45">
+              {group.section}
+            </p>
+            <div className="space-y-0.5">
+              {items.map((item) => {
+                const active =
+                  item.to === "/admin" ? pathname === "/admin" : pathname.startsWith(item.to);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    {...(onIr ? { onClick: onIr } : {})}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all",
+                      active
+                        ? "bg-white text-primary-deep shadow-[0_10px_24px_-14px_rgba(0,0,0,0.6)]"
+                        : "text-sidebar-foreground/72 hover:bg-white/[0.07] hover:text-sidebar-foreground",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "grid h-7 w-7 place-items-center rounded-lg transition-colors",
+                        active ? "bg-primary/10 text-primary" : "bg-white/[0.06]",
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
+function TarjetaUsuario() {
+  const sesion = useSesionAdmin();
+  const { role } = useRole();
+  const navigate = useNavigate();
+  const nombre = sesion?.usuario.nombre ?? roleLabel[role];
+  return (
+    <div className="border-t border-sidebar-border p-3">
+      <div className="flex items-center gap-3 rounded-2xl bg-white/[0.06] px-3 py-2.5">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
+          {sesion ? iniciales(nombre) : roleInitials[role]}
+        </span>
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="truncate text-sm font-semibold">{nombre}</p>
+          <p className="truncate text-[11px] text-sidebar-foreground/60">{roleLabel[role]}</p>
+        </div>
+        <button
+          type="button"
+          title="Cerrar sesión"
+          aria-label="Cerrar sesión"
+          onClick={() => {
+            cerrarSesionAdmin();
+            void navigate({ to: "/admin/login" });
+          }}
+          className="grid h-8 w-8 place-items-center rounded-lg text-sidebar-foreground/60 transition hover:bg-white/10 hover:text-sidebar-foreground"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Lateral({ onIr }: { onIr?: () => void }) {
+  return (
+    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+      <div className="border-b border-sidebar-border px-5 py-5">
+        <BrandMark subtitle="Administración interna" />
+      </div>
+      <Navegacion {...(onIr ? { onIr } : {})} />
+      <TarjetaUsuario />
+    </div>
+  );
+}
+
+/** Etiqueta que aclara de dónde salen los datos. */
+export function OrigenDatos() {
+  return CON_BACKEND ? (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
+      <Database className="h-3 w-3" /> Datos en vivo
+    </span>
+  ) : (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/15 px-2.5 py-1 text-[11px] font-semibold text-warning-foreground"
+      title="Todavía no hay backend conectado: se muestran datos de ejemplo guardados en este navegador."
+    >
+      <Database className="h-3 w-3" /> <span className="hidden sm:inline">Datos de </span>ejemplo
+    </span>
+  );
+}
 
 export function AdminShell({
   title,
@@ -67,112 +186,94 @@ export function AdminShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { role, setRole } = useRole();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { role, setRole, vistaPrevia } = useRole();
+  const [menu, setMenu] = useState(false);
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground lg:flex">
-        <div className="border-b border-sidebar-border px-5 py-5">
-          <BrandMark subtitle="Administración" />
-        </div>
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
-          {nav.map((group) => {
-            const items = group.items.filter((i) => canAccess(role, i.to));
-            if (!items.length) return null;
-            return (
-              <div key={group.section}>
-                <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
-                  {group.section}
-                </p>
-                <div className="space-y-1">
-                  {items.map((item) => {
-                    const active =
-                      item.to === "/admin" ? pathname === "/admin" : pathname.startsWith(item.to);
-                    return (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                          active
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </nav>
-        <div className="border-t border-sidebar-border p-3">
-          <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-sidebar-accent text-xs text-sidebar-accent-foreground">
-                {roleInitials[role]}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1 leading-tight">
-              {/* TODO backend: mostrar acá el nombre real del usuario logueado */}
-              <p className="truncate text-sm font-semibold">{roleLabel[role]}</p>
-              <p className="truncate text-[11px] text-sidebar-foreground/60">Equipo Cloud Esther</p>
-            </div>
-            <Link
-              to="/admin/login"
-              className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </Link>
-          </div>
+      {/* La columna ocupa todo el alto de la página y el menú queda fijo al hacer scroll. */}
+      <aside className="hidden w-[264px] shrink-0 self-stretch bg-sidebar lg:block">
+        <div className="sticky top-0 h-screen">
+          <Lateral />
         </div>
       </aside>
 
+      <Sheet open={menu} onOpenChange={setMenu}>
+        <SheetContent side="left" className="w-[280px] border-0 p-0">
+          <SheetTitle className="sr-only">Menú del panel</SheetTitle>
+          <Lateral onIr={() => setMenu(false)} />
+        </SheetContent>
+      </Sheet>
+
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 border-b border-border bg-card/85 backdrop-blur">
-          <div className="flex flex-wrap items-center gap-4 px-6 py-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h1 className="truncate text-xl font-bold tracking-tight">{title}</h1>
-                <Badge className="border-transparent bg-accent text-accent-foreground">
-                  Panel interno
-                </Badge>
-              </div>
-              {description && (
-                <p className="mt-0.5 truncate text-sm text-muted-foreground">{description}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {actions}
-              {/* Selector solo para desarrollo: no aparece en el build de producción. */}
+        {/* Barra superior */}
+        <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur">
+          <div className="flex items-center gap-3 px-4 py-2.5 md:px-8">
+            <button
+              type="button"
+              onClick={() => setMenu(true)}
+              aria-label="Abrir menú"
+              className="grid h-9 w-9 place-items-center rounded-xl border border-border bg-card lg:hidden"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
+              <ShieldCheck className="h-3 w-3" /> Panel interno
+              <span className="hidden sm:inline"> · Cloud Esther</span>
+            </span>
+            <OrigenDatos />
+            <div className="ml-auto flex items-center gap-2">
+              {/* Solo en desarrollo: para revisar cómo ve el panel cada perfil. */}
               {import.meta.env.DEV && (
-                <div className="hidden items-center gap-2 sm:flex">
-                  <span className="text-xs text-muted-foreground">Vista de rol (dev)</span>
-                  <Select value={role} onValueChange={(v) => setRole(v as AdminRole)}>
-                    <SelectTrigger className="h-9 w-[210px] bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="owner">Dueño (acceso total)</SelectItem>
-                      <SelectItem value="partner">Socio administrativo</SelectItem>
-                      <SelectItem value="support">Soporte técnico</SelectItem>
-                      <SelectItem value="customer-care">Atención al cliente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <label className="hidden items-center gap-2 text-[11px] text-muted-foreground sm:flex">
+                  <Eye className="h-3.5 w-3.5" />
+                  Ver como
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as AdminRole)}
+                    className="h-8 rounded-lg border border-border bg-card px-2 text-xs font-semibold text-foreground outline-none focus:border-primary/50"
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {roleLabel[r]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               )}
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/admin/login">Salir</Link>
-              </Button>
             </div>
           </div>
+          {vistaPrevia && (
+            <div className="border-t border-warning/30 bg-warning/15 px-4 py-1.5 text-center text-[11px] font-semibold text-warning-foreground md:px-8">
+              Vista previa como «{roleLabel[role]}» (solo desarrollo). Tus permisos reales no
+              cambian.
+              <button type="button" className="ml-2 underline" onClick={() => setRole(null)}>
+                Volver a mi perfil
+              </button>
+            </div>
+          )}
         </header>
-        <main className="flex-1 px-6 py-6">
-          <div className="mx-auto w-full max-w-[1400px] space-y-6">{children}</div>
+
+        <main className="flex-1 px-4 py-6 md:px-8">
+          <div className="mx-auto w-full max-w-[1360px] space-y-6">
+            {/* Encabezado de la sección */}
+            <section className="relative overflow-hidden rounded-[28px] border border-primary/15 bg-gradient-to-br from-white via-white to-primary/[0.06] p-5 shadow-[0_18px_44px_-34px_rgba(76,29,149,0.55)] md:p-7">
+              <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-primary-deep via-primary to-primary-glow" />
+              <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/[0.06] blur-2xl" />
+              <div className="relative flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h1 className="text-2xl font-extrabold tracking-tight md:text-[30px]">{title}</h1>
+                  {description && (
+                    <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                      {description}
+                    </p>
+                  )}
+                </div>
+                {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+              </div>
+            </section>
+            {children}
+          </div>
         </main>
       </div>
     </div>

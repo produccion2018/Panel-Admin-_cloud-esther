@@ -68,3 +68,36 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+---
+
+## Panel de administración — cómo funciona (actualizado)
+
+Ruta privada: **`/admin`** (no tiene enlaces desde el sitio público). Sin sesión, todo redirige a `/admin/login`.
+
+### Perfiles
+
+| Perfil | Para quién | Ve |
+| --- | --- | --- |
+| **Dueño** | Vos | Todo, incluidos importes, planes y precios (edita) y equipo y accesos |
+| **Socio** | Tu socio | Resumen, demos, clínicas, pagos (sin importes), planes (solo ver), IA, tickets, actividad |
+| **Soporte técnico** | Técnico en sistemas / desarrollador | Resumen, demos (solo ver), clínicas, IA, tickets, actividad |
+| **Asistente / Secretaría** | Asistentes y secretaría | Resumen, demos (seguimiento), clínicas, pagos (sin importes), tickets |
+
+Todos pueden editar su perfil y cambiar su contraseña. Los permisos están en `src/components/admin/role.tsx`; **el backend también tiene que validarlos**.
+
+### Acceso
+- Ingreso con correo y contraseña, «Mantener la sesión en este equipo», cierre automático tras **30 minutos sin actividad**.
+- **Recuperar contraseña** (`/admin/recuperar`) → enlace por correo → **crear contraseña nueva** (`/admin/restablecer?token=…`, vence en 30 minutos).
+- Reglas de contraseña: 10 caracteres o más, mayúsculas y minúsculas, al menos un número.
+
+### Secciones
+Resumen (pendientes por perfil) · **Demos e interesados** (quién entró al demo, cuántas veces, cuánto tiempo, qué módulos miró, interés alto/medio/bajo y seguimiento: contactada, pasó a cliente, descartada, responsable y notas) · Clínicas clientes (uso contra los límites del plan) · Pagos y cobranza · **Planes y precios** (precio mensual, descuento anual, sucursales, usuarios internos y pacientes activos; el odontograma es fijo: Start/Pro 2D, Plus/Enterprise 3D) · Consumo de IA · Tickets · Registro de actividad · Mi perfil · Equipo y accesos.
+
+### Datos y backend
+- Todas las pantallas leen y escriben a través de **`src/lib/admin/api.ts`**. Ahí está el **contrato completo de endpoints** que tiene que implementar el backend.
+- **Sin backend** (ahora): funciona con **datos de ejemplo** guardados en el navegador; el panel lo indica con la etiqueta «Datos de ejemplo». En desarrollo, el login muestra cuentas de prueba (`src/lib/admin/datos-ejemplo.ts`).
+- **Con backend**: definir `VITE_ADMIN_API_URL=https://…` y el panel usa los endpoints reales con el token de la sesión.
+
+### Conexión con el demo de las clínicas
+La app del demo (repositorio `Cloud-Esther_Demo`) limita cada ingreso de una cuenta de demo a **30 minutos** y registra: registro, ingresos, módulos visitados, planes probados, salida y vencimiento. Con `VITE_PANEL_API_URL` configurada, cada evento se envía a **`POST /demo/eventos`**; el backend los agrupa por cuenta y los devuelve en **`GET /admin/demos`** para esta sección.

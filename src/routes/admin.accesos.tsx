@@ -1,14 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { UserPlus } from "lucide-react";
+import { Check, Copy, Minus, UserPlus } from "lucide-react";
+import { useState, type FormEvent } from "react";
 
-import { admins } from "@/components/admin/mock-data";
+import { Cargando, Seccion } from "@/components/admin/bits";
 import { RestrictedView } from "@/components/admin/restricted";
-import { useRole } from "@/components/admin/role";
+import {
+  ROLES,
+  canAccess,
+  roleDescription,
+  roleLabel,
+  useRole,
+  type AdminRole,
+} from "@/components/admin/role";
 import { AdminShell } from "@/components/admin/shell";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,199 +21,329 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { actualizarAdmin, invitarAdmin } from "@/lib/admin/api";
+import { useAccion, useEquipo } from "@/lib/admin/consultas";
+import { haceCuanto } from "@/lib/admin/formato";
+import { useSesionAdmin } from "@/lib/admin/sesion";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/accesos")({
   head: () => ({
     meta: [
-      { title: "Gestión de accesos — Cloud Esther Administración" },
+      { title: "Equipo y accesos — Cloud Esther Administración" },
       { name: "robots", content: "noindex, nofollow" },
-      { name: "description", content: "Administradores con acceso al panel interno." },
-      { property: "og:title", content: "Gestión de accesos — Cloud Esther" },
-      { property: "og:description", content: "Panel interno." },
     ],
   }),
   component: AccessPage,
 });
 
+const SELECT =
+  "h-9 rounded-lg border border-input bg-card px-2 text-xs font-semibold outline-none focus:border-primary/50 disabled:opacity-60";
+
+/** Qué puede hacer cada perfil (lo mismo que aplica el menú). */
+const MATRIZ: [string, string][] = [
+  ["Resumen", "/admin"],
+  ["Demos e interesados", "/admin/demos"],
+  ["Clínicas clientes", "/admin/clinicas"],
+  ["Pagos y cobranza", "/admin/pagos"],
+  ["Planes y precios", "/admin/planes"],
+  ["Consumo de IA", "/admin/ia"],
+  ["Tickets de soporte", "/admin/soporte"],
+  ["Registro de actividad", "/admin/actividad"],
+  ["Mi perfil y contraseña", "/admin/cuenta"],
+  ["Equipo y accesos", "/admin/accesos"],
+];
+const EXTRAS: [string, AdminRole[]][] = [
+  ["Ver importes y facturación", ["owner"]],
+  ["Editar precios y límites", ["owner"]],
+  ["Seguimiento de demos", ["owner", "partner", "customer-care"]],
+  ["Gestionar tickets", ["owner", "support", "customer-care"]],
+];
+
 function AccessPage() {
   const { role } = useRole();
-  if (role !== "owner") return <RestrictedView />;
+  const sesion = useSesionAdmin();
+  const { data: equipo, isLoading } = useEquipo();
+  const [invitar, setInvitar] = useState(false);
+  const cambiar = useAccion(
+    (a: { id: string; c: Parameters<typeof actualizarAdmin>[1] }) => actualizarAdmin(a.id, a.c),
+    ["equipo"],
+    "Acceso actualizado",
+  );
+  if (!canAccess(role, "/admin/accesos")) return <RestrictedView />;
 
   return (
     <AdminShell
-      title="Gestión de accesos"
-      description="Quién puede entrar al panel de superadministración."
-      actions={<InviteDialog />}
+      title="Equipo y accesos"
+      description="Quién puede entrar al panel interno y con qué perfil: Dueño, Socio, Soporte técnico (técnico en sistemas / desarrollo) y Asistente / Secretaría."
+      actions={
+        <Button onClick={() => setInvitar(true)}>
+          <UserPlus className="mr-1.5 h-4 w-4" /> Dar acceso
+        </Button>
+      }
     >
-      <Card style={{ boxShadow: "var(--shadow-card)" }}>
-        <CardHeader>
-          <CardTitle>Administradores</CardTitle>
-          <CardDescription>Sólo estas personas pueden acceder a /admin</CardDescription>
-        </CardHeader>
-        <CardContent className="px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-6">Persona</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Último acceso</TableHead>
-                <TableHead className="pr-6 text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {admins.map((a) => (
-                <TableRow key={a.email}>
-                  <TableCell className="pl-6">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback className="bg-accent text-xs font-bold text-accent-foreground">
-                          {a.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold">{a.name}</p>
-                        <p className="text-xs text-muted-foreground">{a.email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        a.role === "Dueño"
-                          ? "border-primary/30 bg-primary/10 font-semibold text-primary"
-                          : "font-semibold"
-                      }
-                    >
-                      {a.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{a.lastAccess}</TableCell>
-                  <TableCell className="pr-6 text-right">
-                    <Button variant="ghost" size="sm">
-                      Editar
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      disabled={a.role === "Dueño"}
-                    >
-                      Revocar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+        {ROLES.map((r) => (
+          <div
+            key={r}
+            className="rounded-[22px] border border-primary/20 bg-gradient-to-br from-white to-primary/[0.06] p-4"
+            style={{ boxShadow: "var(--shadow-card)" }}
+          >
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-primary/75">
+              {roleLabel[r]}
+            </p>
+            <p className="mt-1 text-[28px] font-extrabold leading-tight text-primary">
+              {(equipo ?? []).filter((a) => a.rol === r && a.activo).length}
+            </p>
+            <p className="text-xs leading-snug text-muted-foreground">{roleDescription[r]}</p>
+          </div>
+        ))}
+      </div>
 
-      <Card style={{ boxShadow: "var(--shadow-card)" }}>
-        <CardHeader>
-          <CardTitle>Permisos por rol</CardTitle>
-          <CardDescription>Qué ve cada rol dentro de este panel</CardDescription>
-        </CardHeader>
-        <CardContent className="px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-6">Sección</TableHead>
-                <TableHead>Dueño</TableHead>
-                <TableHead className="pr-6">Socio administrativo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+      <Seccion
+        titulo="Personas con acceso"
+        descripcion="Cambiá el perfil o quitá el acceso. El Dueño no se puede desactivar."
+        sinPadding
+      >
+        {isLoading ? (
+          <Cargando />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead>
+                <tr className="bg-primary/[0.035] text-left text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                  <th className="px-5 py-2.5">Persona</th>
+                  <th className="px-3 py-2.5">Perfil</th>
+                  <th className="px-3 py-2.5">Último ingreso</th>
+                  <th className="px-5 py-2.5 text-right">Acceso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(equipo ?? []).map((a) => {
+                  const yo = a.id === sesion?.usuario.id;
+                  return (
+                    <tr
+                      key={a.id}
+                      className={cn("border-t border-border/60", !a.activo && "opacity-55")}
+                    >
+                      <td className="px-5 py-3">
+                        <p className="font-semibold">
+                          {a.nombre}{" "}
+                          {yo && (
+                            <span className="text-xs font-normal text-muted-foreground">(vos)</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{a.email}</p>
+                      </td>
+                      <td className="px-3 py-3">
+                        <select
+                          className={SELECT}
+                          value={a.rol}
+                          disabled={yo || cambiar.isPending}
+                          onChange={(e) =>
+                            cambiar.mutate({ id: a.id, c: { rol: e.target.value as AdminRole } })
+                          }
+                        >
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {roleLabel[r]}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-3 text-xs text-muted-foreground">
+                        {haceCuanto(a.ultimoAcceso)}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        {!yo && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={a.activo ? "text-destructive hover:text-destructive" : ""}
+                            disabled={a.rol === "owner" || cambiar.isPending}
+                            onClick={() => cambiar.mutate({ id: a.id, c: { activo: !a.activo } })}
+                          >
+                            {a.activo ? "Quitar acceso" : "Reactivar"}
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Seccion>
+
+      <Seccion
+        titulo="Qué ve cada perfil"
+        descripcion="Esto define el menú y los permisos. El backend también lo valida."
+        sinPadding
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="bg-primary/[0.035] text-left text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                <th className="px-5 py-2.5">Sección o permiso</th>
+                {ROLES.map((r) => (
+                  <th key={r} className="px-3 py-2.5 text-center">
+                    {roleLabel[r]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
               {[
-                ["Dashboard general", true, true],
-                ["Clínicas clientes", true, true],
-                ["Estado de pagos", true, true],
-                ["Facturación e importes", true, false],
-                ["Consumo de IA", true, true],
-                ["Tickets y logs", true, true],
-                ["Mi cuenta / configuración", true, false],
-                ["Gestión de accesos", true, false],
-              ].map(([s, o, p]) => (
-                <TableRow key={s as string}>
-                  <TableCell className="pl-6 font-medium">{s as string}</TableCell>
-                  <TableCell>{o ? <Yes /> : <No />}</TableCell>
-                  <TableCell className="pr-6">{p ? <Yes /> : <No />}</TableCell>
-                </TableRow>
+                ...MATRIZ.map(([l, ruta]) => [l, ROLES.filter((r) => canAccess(r, ruta))] as const),
+                ...EXTRAS,
+              ].map(([l, roles]) => (
+                <tr key={l} className="border-t border-border/60">
+                  <td className="px-5 py-2.5 font-medium">{l}</td>
+                  {ROLES.map((r) => (
+                    <td key={r} className="px-3 py-2.5 text-center">
+                      {roles.includes(r) ? (
+                        <Check className="mx-auto h-4 w-4 text-success" aria-label="Sí" />
+                      ) : (
+                        <Minus
+                          className="mx-auto h-4 w-4 text-muted-foreground/50"
+                          aria-label="No"
+                        />
+                      )}
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </tbody>
+          </table>
+        </div>
+      </Seccion>
+
+      <DialogoInvitar abierto={invitar} onCerrar={() => setInvitar(false)} />
     </AdminShell>
   );
 }
 
-function Yes() {
-  return <span className="text-sm font-semibold text-success">Sí</span>;
-}
-function No() {
-  return <span className="text-sm font-semibold text-muted-foreground">No</span>;
-}
+function DialogoInvitar({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => void }) {
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [rol, setRol] = useState<AdminRole>("customer-care");
+  const [error, setError] = useState<string | null>(null);
+  const [clave, setClave] = useState<string | null>(null);
+  const invitar = useAccion(invitarAdmin, ["equipo"], (d) => `Acceso creado para ${d.nombre}`);
 
-function InviteDialog() {
+  const cerrar = () => {
+    setNombre("");
+    setEmail("");
+    setRol("customer-care");
+    setError(null);
+    setClave(null);
+    onCerrar();
+  };
+
+  const enviar = (e: FormEvent) => {
+    e.preventDefault();
+    if (!nombre.trim()) return setError("Escribí el nombre.");
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Escribí un correo válido.");
+    setError(null);
+    invitar.mutate({ nombre, email, rol }, { onSuccess: (r) => setClave(r.clavePrueba ?? null) });
+  };
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <UserPlus className="mr-1.5 h-4 w-4" /> Invitar administrador
-        </Button>
-      </DialogTrigger>
+    <Dialog open={abierto} onOpenChange={(v) => !v && cerrar()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invitar administrador</DialogTitle>
+          <DialogTitle>Dar acceso al panel</DialogTitle>
           <DialogDescription>
-            Se enviará un acceso al panel interno de Cloud Esther.
+            La persona recibe un correo para crear su contraseña. Elegí el perfil según su trabajo.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="iname">Nombre</Label>
-            <Input id="iname" placeholder="Martín Alvarez" />
+        {clave ? (
+          <div className="space-y-3 text-sm">
+            <p className="rounded-xl bg-success/10 px-3 py-2 font-semibold text-success">
+              Acceso creado.
+            </p>
+            <div className="rounded-2xl border border-dashed border-primary/25 bg-primary/[0.03] p-3 text-xs">
+              <p className="font-semibold text-primary">Sin backend conectado (prueba)</p>
+              <p className="mt-1 text-muted-foreground">
+                Todavía no se envían correos. Contraseña temporal para probar el ingreso:
+              </p>
+              <button
+                type="button"
+                onClick={() => void navigator.clipboard?.writeText(clave)}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-card px-2.5 py-1 font-mono font-semibold ring-1 ring-border"
+              >
+                {clave} <Copy className="h-3 w-3" />
+              </button>
+            </div>
+            <DialogFooter>
+              <Button onClick={cerrar}>Listo</Button>
+            </DialogFooter>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="iemail">Email</Label>
-            <Input id="iemail" placeholder="socio@cloudesther.com" />
-          </div>
-          <div className="space-y-2">
-            <Label>Rol</Label>
-            <Select defaultValue="partner">
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="owner">Dueño (acceso total)</SelectItem>
-                <SelectItem value="partner">Socio administrativo</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button className="w-full sm:w-auto">Enviar invitación</Button>
-        </DialogFooter>
+        ) : (
+          <form onSubmit={enviar} className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="inombre">Nombre y apellido</Label>
+              <Input id="inombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="iemail">Correo</Label>
+              <Input
+                id="iemail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="nombre@cloudesther.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Perfil</Label>
+              <div className="grid gap-2">
+                {ROLES.map((r) => (
+                  <label
+                    key={r}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm transition",
+                      rol === r
+                        ? "border-primary bg-primary/[0.05]"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="rol"
+                      checked={rol === r}
+                      onChange={() => setRol(r)}
+                      className="mt-1 accent-[var(--primary)]"
+                    />
+                    <span>
+                      <span className="block font-semibold">{roleLabel[r]}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {roleDescription[r]}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            {error && (
+              <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={cerrar}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={invitar.isPending}>
+                Dar acceso
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

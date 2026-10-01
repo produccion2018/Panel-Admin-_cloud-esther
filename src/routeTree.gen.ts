@@ -16,9 +16,13 @@ import { Route as AdminAccesosRouteImport } from './routes/admin.accesos'
 import { Route as AdminActividadRouteImport } from './routes/admin.actividad'
 import { Route as AdminClinicasRouteImport } from './routes/admin.clinicas'
 import { Route as AdminCuentaRouteImport } from './routes/admin.cuenta'
+import { Route as AdminDemosRouteImport } from './routes/admin.demos'
 import { Route as AdminIaRouteImport } from './routes/admin.ia'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminPagosRouteImport } from './routes/admin.pagos'
+import { Route as AdminPlanesRouteImport } from './routes/admin.planes'
+import { Route as AdminRecuperarRouteImport } from './routes/admin.recuperar'
+import { Route as AdminRestablecerRouteImport } from './routes/admin.restablecer'
 import { Route as AdminSoporteRouteImport } from './routes/admin.soporte'
 
 const IndexRoute = IndexRouteImport.update({
@@ -56,6 +60,11 @@ const AdminCuentaRoute = AdminCuentaRouteImport.update({
   path: '/cuenta',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDemosRoute = AdminDemosRouteImport.update({
+  id: '/demos',
+  path: '/demos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminIaRoute = AdminIaRouteImport.update({
   id: '/ia',
   path: '/ia',
@@ -71,6 +80,21 @@ const AdminPagosRoute = AdminPagosRouteImport.update({
   path: '/pagos',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPlanesRoute = AdminPlanesRouteImport.update({
+  id: '/planes',
+  path: '/planes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRecuperarRoute = AdminRecuperarRouteImport.update({
+  id: '/recuperar',
+  path: '/recuperar',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRestablecerRoute = AdminRestablecerRouteImport.update({
+  id: '/restablecer',
+  path: '/restablecer',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSoporteRoute = AdminSoporteRouteImport.update({
   id: '/soporte',
   path: '/soporte',
@@ -84,9 +108,13 @@ export interface FileRoutesByFullPath {
   '/admin/actividad': typeof AdminActividadRoute
   '/admin/clinicas': typeof AdminClinicasRoute
   '/admin/cuenta': typeof AdminCuentaRoute
+  '/admin/demos': typeof AdminDemosRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/pagos': typeof AdminPagosRoute
+  '/admin/planes': typeof AdminPlanesRoute
+  '/admin/recuperar': typeof AdminRecuperarRoute
+  '/admin/restablecer': typeof AdminRestablecerRoute
   '/admin/soporte': typeof AdminSoporteRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -96,9 +124,13 @@ export interface FileRoutesByTo {
   '/admin/actividad': typeof AdminActividadRoute
   '/admin/clinicas': typeof AdminClinicasRoute
   '/admin/cuenta': typeof AdminCuentaRoute
+  '/admin/demos': typeof AdminDemosRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/pagos': typeof AdminPagosRoute
+  '/admin/planes': typeof AdminPlanesRoute
+  '/admin/recuperar': typeof AdminRecuperarRoute
+  '/admin/restablecer': typeof AdminRestablecerRoute
   '/admin/soporte': typeof AdminSoporteRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -110,9 +142,13 @@ export interface FileRoutesById {
   '/admin/actividad': typeof AdminActividadRoute
   '/admin/clinicas': typeof AdminClinicasRoute
   '/admin/cuenta': typeof AdminCuentaRoute
+  '/admin/demos': typeof AdminDemosRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/pagos': typeof AdminPagosRoute
+  '/admin/planes': typeof AdminPlanesRoute
+  '/admin/recuperar': typeof AdminRecuperarRoute
+  '/admin/restablecer': typeof AdminRestablecerRoute
   '/admin/soporte': typeof AdminSoporteRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -125,9 +161,13 @@ export interface FileRouteTypes {
     | '/admin/actividad'
     | '/admin/clinicas'
     | '/admin/cuenta'
+    | '/admin/demos'
     | '/admin/ia'
     | '/admin/login'
     | '/admin/pagos'
+    | '/admin/planes'
+    | '/admin/recuperar'
+    | '/admin/restablecer'
     | '/admin/soporte'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -137,9 +177,13 @@ export interface FileRouteTypes {
     | '/admin/actividad'
     | '/admin/clinicas'
     | '/admin/cuenta'
+    | '/admin/demos'
     | '/admin/ia'
     | '/admin/login'
     | '/admin/pagos'
+    | '/admin/planes'
+    | '/admin/recuperar'
+    | '/admin/restablecer'
     | '/admin/soporte'
     | '/admin'
   id:
@@ -150,9 +194,13 @@ export interface FileRouteTypes {
     | '/admin/actividad'
     | '/admin/clinicas'
     | '/admin/cuenta'
+    | '/admin/demos'
     | '/admin/ia'
     | '/admin/login'
     | '/admin/pagos'
+    | '/admin/planes'
+    | '/admin/recuperar'
+    | '/admin/restablecer'
     | '/admin/soporte'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -213,6 +261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCuentaRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/demos': {
+      id: '/admin/demos'
+      path: '/demos'
+      fullPath: '/admin/demos'
+      preLoaderRoute: typeof AdminDemosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/ia': {
       id: '/admin/ia'
       path: '/ia'
@@ -234,6 +289,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPagosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/planes': {
+      id: '/admin/planes'
+      path: '/planes'
+      fullPath: '/admin/planes'
+      preLoaderRoute: typeof AdminPlanesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/recuperar': {
+      id: '/admin/recuperar'
+      path: '/recuperar'
+      fullPath: '/admin/recuperar'
+      preLoaderRoute: typeof AdminRecuperarRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/restablecer': {
+      id: '/admin/restablecer'
+      path: '/restablecer'
+      fullPath: '/admin/restablecer'
+      preLoaderRoute: typeof AdminRestablecerRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/soporte': {
       id: '/admin/soporte'
       path: '/soporte'
@@ -249,9 +325,13 @@ interface AdminRouteChildren {
   AdminActividadRoute: typeof AdminActividadRoute
   AdminClinicasRoute: typeof AdminClinicasRoute
   AdminCuentaRoute: typeof AdminCuentaRoute
+  AdminDemosRoute: typeof AdminDemosRoute
   AdminIaRoute: typeof AdminIaRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminPagosRoute: typeof AdminPagosRoute
+  AdminPlanesRoute: typeof AdminPlanesRoute
+  AdminRecuperarRoute: typeof AdminRecuperarRoute
+  AdminRestablecerRoute: typeof AdminRestablecerRoute
   AdminSoporteRoute: typeof AdminSoporteRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -261,9 +341,13 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminActividadRoute: AdminActividadRoute,
   AdminClinicasRoute: AdminClinicasRoute,
   AdminCuentaRoute: AdminCuentaRoute,
+  AdminDemosRoute: AdminDemosRoute,
   AdminIaRoute: AdminIaRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminPagosRoute: AdminPagosRoute,
+  AdminPlanesRoute: AdminPlanesRoute,
+  AdminRecuperarRoute: AdminRecuperarRoute,
+  AdminRestablecerRoute: AdminRestablecerRoute,
   AdminSoporteRoute: AdminSoporteRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

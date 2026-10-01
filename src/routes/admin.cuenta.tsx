@@ -1,118 +1,185 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RestrictedView } from "@/components/admin/restricted";
-import { useRole } from "@/components/admin/role";
+import { Loader2, ShieldCheck } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
+
+import { Seccion } from "@/components/admin/bits";
+import { CampoClave, ReglasClave } from "@/components/admin/campos-clave";
+import { roleDescription, roleLabel, useRole } from "@/components/admin/role";
 import { AdminShell } from "@/components/admin/shell";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { actualizarPerfil, cambiarClave, problemaClave } from "@/lib/admin/api";
+import { fecha } from "@/lib/admin/formato";
+import { INACTIVIDAD_MS, actualizarUsuarioSesion, useSesionAdmin } from "@/lib/admin/sesion";
 
 export const Route = createFileRoute("/admin/cuenta")({
   head: () => ({
     meta: [
-      { title: "Mi cuenta — Cloud Esther Administración" },
+      { title: "Mi perfil — Cloud Esther Administración" },
       { name: "robots", content: "noindex, nofollow" },
-      { name: "description", content: "Perfil y seguridad del administrador." },
-      { property: "og:title", content: "Mi cuenta — Cloud Esther" },
-      { property: "og:description", content: "Panel interno." },
     ],
   }),
   component: AccountPage,
 });
 
 function AccountPage() {
+  const sesion = useSesionAdmin();
   const { role } = useRole();
+  const u = sesion?.usuario;
+  const [nombre, setNombre] = useState(u?.nombre ?? "");
+  const [telefono, setTelefono] = useState(u?.telefono ?? "");
+  const [guardando, setGuardando] = useState(false);
 
-  if (role !== "owner") return <RestrictedView />;
+  const [actual, setActual] = useState("");
+  const [nueva, setNueva] = useState("");
+  const [repetir, setRepetir] = useState("");
+  const [errorClave, setErrorClave] = useState<string | null>(null);
+  const [cambiando, setCambiando] = useState(false);
+
+  const guardarPerfil = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!nombre.trim()) {
+      toast.error("Escribí tu nombre.");
+      return;
+    }
+    setGuardando(true);
+    try {
+      const usuario = await actualizarPerfil({ nombre: nombre.trim(), telefono: telefono.trim() });
+      actualizarUsuarioSesion({ nombre: usuario.nombre, telefono: usuario.telefono });
+      toast.success("Perfil actualizado");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo guardar.");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const guardarClave = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!actual) return setErrorClave("Escribí tu contraseña actual.");
+    const problema = problemaClave(nueva);
+    if (problema) return setErrorClave(problema);
+    if (nueva !== repetir) return setErrorClave("Las contraseñas nuevas no coinciden.");
+    setErrorClave(null);
+    setCambiando(true);
+    try {
+      await cambiarClave(actual, nueva);
+      setActual("");
+      setNueva("");
+      setRepetir("");
+      toast.success("Contraseña actualizada");
+    } catch (err) {
+      setErrorClave(err instanceof Error ? err.message : "No se pudo cambiar la contraseña.");
+    } finally {
+      setCambiando(false);
+    }
+  };
 
   return (
-    <AdminShell title="Mi cuenta" description="Perfil, seguridad y preferencias del panel.">
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2" style={{ boxShadow: "var(--shadow-card)" }}>
-          <CardHeader>
-            <CardTitle>Perfil</CardTitle>
-            <CardDescription>Datos visibles para el resto del equipo interno</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="bg-accent text-lg font-bold text-accent-foreground">
-                  ER
-                </AvatarFallback>
-              </Avatar>
-              <Button variant="outline" size="sm">
-                Cambiar foto
-              </Button>
-            </div>
+    <AdminShell title="Mi perfil y contraseña" description="Tus datos de acceso al panel interno.">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <Seccion titulo="Mis datos" descripcion="Así te ve el resto del equipo.">
+          <form onSubmit={guardarPerfil} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="nombre">Nombre</Label>
-                <Input id="nombre" defaultValue="Esteban" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="apellido">Apellido</Label>
-                <Input id="apellido" defaultValue="Ruiz" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" defaultValue="esteban@cloudesther.com" />
+                <Label htmlFor="nombre">Nombre y apellido</Label>
+                <Input
+                  id="nombre"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  className="h-11"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tel">Teléfono</Label>
-                <Input id="tel" defaultValue="+54 11 5555 1234" />
+                <Input
+                  id="tel"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  placeholder="+54 9 11 …"
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="email">Correo de acceso</Label>
+                <Input id="email" value={u?.email ?? ""} disabled className="h-11" />
+                <p className="text-xs text-muted-foreground">
+                  El correo lo cambia el Dueño desde Equipo y accesos.
+                </p>
               </div>
             </div>
-            <Separator />
-            <div className="space-y-4">
-              <p className="text-sm font-semibold">Cambiar contraseña</p>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="p1">Actual</Label>
-                  <Input id="p1" type="password" placeholder="••••••••" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p2">Nueva</Label>
-                  <Input id="p2" type="password" placeholder="••••••••" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p3">Repetir</Label>
-                  <Input id="p3" type="password" placeholder="••••••••" />
-                </div>
-              </div>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={guardando}>
+                {guardando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar datos
+              </Button>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline">Cancelar</Button>
-              <Button>Guardar cambios</Button>
-            </div>
-          </CardContent>
-        </Card>
+          </form>
+        </Seccion>
 
-        <Card style={{ boxShadow: "var(--shadow-card)" }}>
-          <CardHeader>
-            <CardTitle>Seguridad</CardTitle>
-            <CardDescription>Preferencias del acceso interno</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {[
-              { t: "Verificación en dos pasos", d: "Código por app autenticadora" },
-              { t: "Alertas de acceso", d: "Aviso por email en cada login" },
-              { t: "Cerrar sesión a los 30 min", d: "Inactividad en el panel" },
-              { t: "Resumen semanal", d: "Reporte de negocio los lunes" },
-            ].map((s, i) => (
-              <div key={s.t} className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium">{s.t}</p>
-                  <p className="text-xs text-muted-foreground">{s.d}</p>
-                </div>
-                <Switch defaultChecked={i !== 2} />
+        <Seccion titulo="Mi acceso">
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start gap-3 rounded-2xl bg-primary/[0.06] p-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p className="font-bold">{roleLabel[role]}</p>
+                <p className="text-xs text-muted-foreground">{roleDescription[role]}</p>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+            </div>
+            <dl className="divide-y divide-border/60 rounded-2xl border border-border">
+              {(
+                [
+                  ["Ingreso actual", fecha(sesion?.inicio ?? null, true)],
+                  ["Cuenta creada", fecha(u?.creado ?? null)],
+                  ["Cierre por inactividad", `${INACTIVIDAD_MS / 60000} minutos`],
+                ] as const
+              ).map(([k, v]) => (
+                <div key={k} className="flex justify-between gap-3 px-3 py-2">
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd className="font-semibold">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </Seccion>
       </div>
+
+      <Seccion
+        titulo="Cambiar contraseña"
+        descripcion="Si no recordás la actual, cerrá sesión y usá «¿Olvidaste tu contraseña?»."
+      >
+        <form
+          onSubmit={guardarClave}
+          className="grid gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] lg:items-end"
+        >
+          <CampoClave
+            id="actual"
+            label="Contraseña actual"
+            value={actual}
+            onChange={setActual}
+            autoComplete="current-password"
+          />
+          <CampoClave id="nueva" label="Contraseña nueva" value={nueva} onChange={setNueva} />
+          <CampoClave id="repetir" label="Repetir la nueva" value={repetir} onChange={setRepetir} />
+          <Button type="submit" className="h-11" disabled={cambiando}>
+            {cambiando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Cambiar contraseña
+          </Button>
+          <div className="lg:col-span-4">
+            <ReglasClave clave={nueva} />
+            {errorClave && (
+              <p
+                role="alert"
+                className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
+              >
+                {errorClave}
+              </p>
+            )}
+          </div>
+        </form>
+      </Seccion>
     </AdminShell>
   );
 }
