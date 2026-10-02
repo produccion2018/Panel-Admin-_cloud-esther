@@ -7,9 +7,44 @@ import {
   CRECIMIENTO_INICIAL,
   DEMOS_INICIALES,
   PLANES_INICIALES,
-  TICKETS_INICIALES,
 } from "./datos-ejemplo";
 import { leerSesion } from "./sesion";
+import {
+  ANTICIPOS_INICIALES,
+  ASISTENCIAS_INICIALES,
+  AUSENCIAS_INICIALES,
+  CONTRATOS_INICIALES,
+  DOCUMENTOS_INICIALES,
+  EMPLEADOS_INICIALES,
+  GASTOS_INICIALES,
+  INCIDENTES_INICIALES,
+  LIQUIDACIONES_INICIALES,
+  NOTIFICACIONES_INICIALES,
+  SESIONES_INICIALES,
+  INTENTOS_INICIALES,
+  PAGOS_NOMINA_INICIALES,
+  PROVEEDORES_INICIALES,
+  TAREAS_INICIALES,
+  TICKETS_SOPORTE_INICIALES,
+} from "./datos-ejemplo-empresa";
+import type {
+  Anticipo,
+  Asistencia,
+  Ausencia,
+  Contrato,
+  DocumentoInterno,
+  Empleado,
+  Gasto,
+  Incidente,
+  IntentoFallido,
+  Liquidacion,
+  Notificacion,
+  PagoNomina,
+  Proveedor,
+  SesionPanel,
+  TareaInterna,
+  TicketSoporte,
+} from "./tipos-empresa";
 import type {
   AdminRole,
   AdminUser,
@@ -20,7 +55,6 @@ import type {
   PlanConfig,
   PlanId,
   SesionAdmin,
-  Ticket,
 } from "./tipos";
 
 /* Ubicación: src/lib/admin/api.ts
@@ -33,7 +67,7 @@ import type {
 
    CONTRATO (lo que tiene que implementar el backend)
    POST   /admin/auth/login              { email, clave }            → SesionAdmin
-   POST   /admin/auth/logout
+   POST   /admin/auth/logout             { motivo: "Manual" | "Inactividad" } (cierra la sesión auditada)
    POST   /admin/auth/recuperar          { email }                   → 204 (envía el enlace por correo)
    POST   /admin/auth/restablecer        { token, clave }            → 204
    POST   /admin/auth/cambiar-clave      { actual, nueva }           → 204
@@ -48,9 +82,18 @@ import type {
    GET    /admin/demos                                               → CuentaDemo[]
    PATCH  /admin/demos/:id               { estado?, notas?, responsable? } → CuentaDemo
    POST   /demo/eventos                  (lo envía la app del demo: registro, ingreso, módulo,
-                                          plan, cierre, expiración) → el backend arma CuentaDemo
-   GET    /admin/tickets                                             → Ticket[]
-   PATCH  /admin/tickets/:id             { estado?, asignado? }      → Ticket
+                                          plan, cierre, expiración, solicitud) → el backend arma
+                                          CuentaDemo (ingresos y solicitudes) y valida los 30 min
+                                          y la espera para volver a entrar
+   GET    /admin/notificaciones                                      → Notificacion[]
+   PATCH  /admin/notificaciones          { ids | "todas", cambios }  → 204
+   GET    /admin/auditoria/sesiones                                  → SesionPanel[] (con IP)
+   GET    /admin/auditoria/intentos                                  → IntentoFallido[]
+   GET    /admin/empresa/:coleccion                                  → lista (empleados, asistencias,
+          ausencias, documentos, liquidaciones, pagosNomina, anticipos, proveedores, gastos,
+          contratos, ticketsSoporte, incidentes, tareas)
+   PUT    /admin/empresa/:coleccion/:id   item                       → item (crea o actualiza)
+   DELETE /admin/empresa/:coleccion/:id                              → 204
    GET    /admin/actividad                                           → EventoActividad[]
    GET    /admin/ia/mensual                                          → ConsumoIAMensual[]
    GET    /admin/clinicas/crecimiento                                → { mes, nuevas, total }[]
@@ -83,14 +126,50 @@ async function http<T>(metodo: string, ruta: string, cuerpo?: unknown): Promise<
 
 /* ───────────── Base local (modo sin backend) ───────────── */
 
+/** Colecciones de los módulos internos de la empresa (CRUD genérico). */
+export type Colecciones = {
+  empleados: Empleado[];
+  asistencias: Asistencia[];
+  ausencias: Ausencia[];
+  documentos: DocumentoInterno[];
+  liquidaciones: Liquidacion[];
+  pagosNomina: PagoNomina[];
+  anticipos: Anticipo[];
+  proveedores: Proveedor[];
+  gastos: Gasto[];
+  contratos: Contrato[];
+  ticketsSoporte: TicketSoporte[];
+  incidentes: Incidente[];
+  tareas: TareaInterna[];
+};
+
+const COLECCIONES_INICIALES: Colecciones = {
+  empleados: EMPLEADOS_INICIALES,
+  asistencias: ASISTENCIAS_INICIALES,
+  ausencias: AUSENCIAS_INICIALES,
+  documentos: DOCUMENTOS_INICIALES,
+  liquidaciones: LIQUIDACIONES_INICIALES,
+  pagosNomina: PAGOS_NOMINA_INICIALES,
+  anticipos: ANTICIPOS_INICIALES,
+  proveedores: PROVEEDORES_INICIALES,
+  gastos: GASTOS_INICIALES,
+  contratos: CONTRATOS_INICIALES,
+  ticketsSoporte: TICKETS_SOPORTE_INICIALES,
+  incidentes: INCIDENTES_INICIALES,
+  tareas: TAREAS_INICIALES,
+};
+
 type BaseLocal = {
-  version: 1;
+  version: 1 | 2;
+  colecciones: Colecciones;
+  notificaciones: Notificacion[];
+  sesiones: SesionPanel[];
+  intentos: IntentoFallido[];
   admins: AdminUser[];
   claves: Record<string, string>; // email → hash
   planes: PlanConfig[];
   clinicas: Clinica[];
   demos: CuentaDemo[];
-  tickets: Ticket[];
   actividad: EventoActividad[];
   recuperaciones: { token: string; email: string; vence: number }[];
 };
@@ -109,7 +188,16 @@ async function db(): Promise<BaseLocal> {
   try {
     const raw = typeof window !== "undefined" ? window.localStorage.getItem(KEY) : null;
     if (raw) {
-      base = JSON.parse(raw) as BaseLocal;
+      const guardada = JSON.parse(raw) as BaseLocal;
+      // Datos guardados antes de los módulos internos: se agregan sin perder lo cargado.
+      base = {
+        ...guardada,
+        version: 2,
+        colecciones: { ...COLECCIONES_INICIALES, ...(guardada.colecciones ?? {}) },
+        notificaciones: guardada.notificaciones ?? NOTIFICACIONES_INICIALES,
+        sesiones: guardada.sesiones ?? SESIONES_INICIALES,
+        intentos: guardada.intentos ?? INTENTOS_INICIALES,
+      };
       return base;
     }
   } catch {
@@ -118,13 +206,16 @@ async function db(): Promise<BaseLocal> {
   const claves: Record<string, string> = {};
   for (const [email, clave] of Object.entries(CLAVES_PRUEBA)) claves[email] = await hash(clave);
   base = {
-    version: 1,
+    version: 2,
+    colecciones: COLECCIONES_INICIALES,
+    notificaciones: NOTIFICACIONES_INICIALES,
+    sesiones: SESIONES_INICIALES,
+    intentos: INTENTOS_INICIALES,
     admins: ADMINS_INICIALES,
     claves,
     planes: PLANES_INICIALES,
     clinicas: CLINICAS_INICIALES,
     demos: DEMOS_INICIALES,
-    tickets: TICKETS_INICIALES,
     actividad: ACTIVIDAD_INICIAL,
     recuperaciones: [],
   };
@@ -175,12 +266,45 @@ export async function iniciarSesionAdmin(email: string, clave: string): Promise<
   await espera();
   const b = await db();
   const usuario = b.admins.find((a) => a.email === correo);
-  if (!usuario || b.claves[correo] !== (await hash(clave)))
+  const fallo = (motivo: string) => {
+    b.intentos = [
+      {
+        id: nuevoId("int"),
+        fecha: new Date().toISOString(),
+        email: correo,
+        motivo,
+        ...dispositivo(),
+      },
+      ...b.intentos,
+    ].slice(0, 300);
+    guardar();
+  };
+  if (!usuario || b.claves[correo] !== (await hash(clave))) {
+    fallo(usuario ? "Contraseña incorrecta" : "Correo sin acceso al panel");
     throw new ErrorApi("El correo o la contraseña no son correctos.");
-  if (!usuario.activo) throw new ErrorApi("Tu acceso está desactivado. Hablá con el Dueño.");
+  }
+  if (!usuario.activo) {
+    fallo("Acceso desactivado");
+    throw new ErrorApi("Tu acceso está desactivado. Hablá con el Dueño.");
+  }
   usuario.ultimoAcceso = new Date().toISOString();
+  const token = nuevoId("local");
+  b.sesiones = [
+    {
+      id: token,
+      usuario: usuario.nombre,
+      email: usuario.email,
+      rol: usuario.rol,
+      inicio: usuario.ultimoAcceso,
+      ultimaActividad: usuario.ultimoAcceso,
+      fin: null,
+      cierre: null,
+      ...dispositivo(),
+    },
+    ...b.sesiones,
+  ].slice(0, 500);
   guardar();
-  const sesion: SesionAdmin = { usuario, token: nuevoId("local"), inicio: usuario.ultimoAcceso };
+  const sesion: SesionAdmin = { usuario, token, inicio: usuario.ultimoAcceso };
   await registrar("Ingresó al panel", "acceso");
   return sesion;
 }
@@ -304,6 +428,133 @@ export async function actualizarAdmin(id: string, cambios: { rol?: AdminRole; ac
   return u;
 }
 
+/* ───────────── Auditoría de sesiones del panel ───────────── */
+
+/** Dispositivo y navegador aproximados (la IP la informa el backend). */
+function dispositivo() {
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const navegador = /Edg\//.test(ua)
+    ? "Edge"
+    : /Chrome\//.test(ua)
+      ? "Chrome"
+      : /Firefox\//.test(ua)
+        ? "Firefox"
+        : /Safari\//.test(ua)
+          ? "Safari"
+          : "Otro";
+  const tipo = /Mobi|Android|iPhone/.test(ua) ? "Celular" : "Computadora";
+  const so = /Windows/.test(ua)
+    ? "Windows"
+    : /Android/.test(ua)
+      ? "Android"
+      : /iPhone|iPad/.test(ua)
+        ? "iOS"
+        : /Mac OS X/.test(ua)
+          ? "macOS"
+          : /Linux/.test(ua)
+            ? "Linux"
+            : "";
+  return { dispositivo: so ? `${tipo} · ${so}` : tipo, navegador };
+}
+
+/** Cierre de sesión (manual o por inactividad). TODO backend: POST /admin/auth/logout. */
+export async function registrarSalida(motivo: "Manual" | "Inactividad") {
+  const token = leerSesion()?.token;
+  if (CON_BACKEND) return http<void>("POST", "/admin/auth/logout", { motivo });
+  const b = await db();
+  const s = b.sesiones.find((x) => x.id === token);
+  if (s && !s.fin) {
+    s.fin = new Date().toISOString();
+    s.cierre = motivo;
+    guardar();
+    await registrar(
+      motivo === "Manual" ? "Cerró sesión" : "Sesión cerrada por inactividad",
+      "acceso",
+    );
+  }
+}
+
+/** Última actividad de la sesión abierta (se llama cada tanto mientras se usa el panel). */
+export async function marcarActividadSesion() {
+  if (CON_BACKEND) return;
+  const token = leerSesion()?.token;
+  const b = await db();
+  const s = b.sesiones.find((x) => x.id === token);
+  if (s && !s.fin) {
+    s.ultimaActividad = new Date().toISOString();
+    guardar();
+  }
+}
+
+export async function obtenerSesiones(): Promise<SesionPanel[]> {
+  if (CON_BACKEND) return http("GET", "/admin/auditoria/sesiones");
+  return copia((await db()).sesiones);
+}
+
+export async function obtenerIntentos(): Promise<IntentoFallido[]> {
+  if (CON_BACKEND) return http("GET", "/admin/auditoria/intentos");
+  return copia((await db()).intentos);
+}
+
+/* ───────────── Notificaciones ───────────── */
+
+export async function obtenerNotificaciones(): Promise<Notificacion[]> {
+  if (CON_BACKEND) return http("GET", "/admin/notificaciones");
+  return copia((await db()).notificaciones);
+}
+
+export async function actualizarNotificaciones(
+  ids: string[] | "todas",
+  cambios: Partial<Pick<Notificacion, "leida" | "archivada">>,
+) {
+  if (CON_BACKEND) return http<void>("PATCH", "/admin/notificaciones", { ids, cambios });
+  const b = await db();
+  b.notificaciones = b.notificaciones.map((n) =>
+    ids === "todas" || ids.includes(n.id) ? { ...n, ...cambios } : n,
+  );
+  guardar();
+}
+
+/* ───────────── Módulos internos (CRUD genérico) ───────────── */
+
+export async function listar<K extends keyof Colecciones>(k: K): Promise<Colecciones[K]> {
+  if (CON_BACKEND) return http("GET", `/admin/empresa/${k}`);
+  return copia((await db()).colecciones[k]);
+}
+
+/** Crea o actualiza (por id). */
+export async function guardarEn<K extends keyof Colecciones>(
+  k: K,
+  item: Colecciones[K][number],
+  accion?: string,
+) {
+  if (CON_BACKEND)
+    return http<Colecciones[K][number]>("PUT", `/admin/empresa/${k}/${item.id}`, item);
+  await espera();
+  const b = await db();
+  const lista = b.colecciones[k] as Colecciones[K][number][];
+  const existe = lista.some((x) => x.id === item.id);
+  (b.colecciones[k] as Colecciones[K][number][]) = existe
+    ? lista.map((x) => (x.id === item.id ? item : x))
+    : [item, ...lista];
+  guardar();
+  if (accion) await registrar(accion, "sistema");
+  return item;
+}
+
+export async function borrarDe<K extends keyof Colecciones>(k: K, id: string, accion?: string) {
+  if (CON_BACKEND) return http<void>("DELETE", `/admin/empresa/${k}/${id}`);
+  await espera();
+  const b = await db();
+  (b.colecciones[k] as { id: string }[]) = (b.colecciones[k] as { id: string }[]).filter(
+    (x) => x.id !== id,
+  );
+  guardar();
+  if (accion) await registrar(accion, "sistema");
+}
+
+export const nuevoIdLocal = nuevoId;
+
 /* ───────────── Planes ───────────── */
 
 export async function obtenerPlanes(): Promise<PlanConfig[]> {
@@ -359,25 +610,6 @@ export async function actualizarDemo(
   if (cambios.estado)
     await registrar(`Marcó la demo de ${d.clinica} como «${cambios.estado}»`, "demo");
   return d;
-}
-
-export async function obtenerTickets(): Promise<Ticket[]> {
-  if (CON_BACKEND) return http("GET", "/admin/tickets");
-  return copia((await db()).tickets);
-}
-
-export async function actualizarTicket(
-  id: string,
-  cambios: Partial<Pick<Ticket, "estado" | "asignado">>,
-) {
-  if (CON_BACKEND) return http<Ticket>("PATCH", `/admin/tickets/${id}`, cambios);
-  await espera();
-  const b = await db();
-  const t = b.tickets.find((x) => x.id === id);
-  if (!t) throw new ErrorApi("Ticket no encontrado.");
-  Object.assign(t, cambios);
-  guardar();
-  return t;
 }
 
 export async function obtenerActividad(): Promise<EventoActividad[]> {

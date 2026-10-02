@@ -1,26 +1,35 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  Bell,
   Building2,
   CreditCard,
   Database,
   Eye,
+  FileBarChart,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
   Menu,
+  Moon,
   MonitorPlay,
   Package,
+  Receipt,
   ScrollText,
   Settings,
   ShieldCheck,
   Sparkles,
+  Sun,
+  Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { BrandMark } from "./logo";
+import { Campana } from "./notificaciones";
 import { ROLES, canAccess, roleInitials, roleLabel, useRole, type AdminRole } from "./role";
-import { CON_BACKEND } from "@/lib/admin/api";
+import { CON_BACKEND, registrarSalida } from "@/lib/admin/api";
+import { guardarPreferencias, usePreferencias } from "@/lib/admin/preferencias";
 import { cerrarSesionAdmin, useSesionAdmin } from "@/lib/admin/sesion";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -41,16 +50,29 @@ const nav: { section: string; items: NavItem[] }[] = [
     ],
   },
   {
-    section: "Operación",
+    section: "Empresa",
     items: [
-      { to: "/admin/soporte", label: "Tickets de soporte", icon: LifeBuoy },
-      { to: "/admin/actividad", label: "Registro de actividad", icon: ScrollText },
+      { to: "/admin/personal", label: "Personal", icon: Users },
+      { to: "/admin/nomina", label: "Nómina y pagos", icon: Wallet },
+      { to: "/admin/gastos", label: "Gastos y proveedores", icon: Receipt },
+    ],
+  },
+  {
+    section: "Operaciones",
+    items: [{ to: "/admin/soporte", label: "Soporte técnico", icon: LifeBuoy }],
+  },
+  {
+    section: "Control",
+    items: [
+      { to: "/admin/auditoria", label: "Auditoría", icon: ScrollText },
+      { to: "/admin/reportes", label: "Reportes", icon: FileBarChart },
+      { to: "/admin/notificaciones", label: "Notificaciones", icon: Bell },
     ],
   },
   {
     section: "Cuenta",
     items: [
-      { to: "/admin/cuenta", label: "Mi perfil y contraseña", icon: Settings },
+      { to: "/admin/cuenta", label: "Mi perfil y apariencia", icon: Settings },
       { to: "/admin/accesos", label: "Equipo y accesos", icon: ShieldCheck },
     ],
   },
@@ -91,14 +113,14 @@ function Navegacion({ onIr }: { onIr?: () => void }) {
                     className={cn(
                       "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all",
                       active
-                        ? "bg-white text-primary-deep shadow-[0_10px_24px_-14px_rgba(0,0,0,0.6)]"
-                        : "text-sidebar-foreground/72 hover:bg-white/[0.07] hover:text-sidebar-foreground",
+                        ? "bg-card text-primary shadow-[0_10px_24px_-14px_rgba(0,0,0,0.6)]"
+                        : "text-sidebar-foreground/72 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                     )}
                   >
                     <span
                       className={cn(
                         "grid h-7 w-7 place-items-center rounded-lg transition-colors",
-                        active ? "bg-primary/10 text-primary" : "bg-white/[0.06]",
+                        active ? "bg-primary/10 text-primary" : "bg-sidebar-accent/70",
                       )}
                     >
                       <item.icon className="h-4 w-4" />
@@ -122,7 +144,7 @@ function TarjetaUsuario() {
   const nombre = sesion?.usuario.nombre ?? roleLabel[role];
   return (
     <div className="border-t border-sidebar-border p-3">
-      <div className="flex items-center gap-3 rounded-2xl bg-white/[0.06] px-3 py-2.5">
+      <div className="flex items-center gap-3 rounded-2xl bg-sidebar-accent/70 px-3 py-2.5">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
           {sesion ? iniciales(nombre) : roleInitials[role]}
         </span>
@@ -135,10 +157,12 @@ function TarjetaUsuario() {
           title="Cerrar sesión"
           aria-label="Cerrar sesión"
           onClick={() => {
-            cerrarSesionAdmin();
-            void navigate({ to: "/admin/login" });
+            void registrarSalida("Manual").finally(() => {
+              cerrarSesionAdmin();
+              void navigate({ to: "/admin/login" });
+            });
           }}
-          className="grid h-8 w-8 place-items-center rounded-lg text-sidebar-foreground/60 transition hover:bg-white/10 hover:text-sidebar-foreground"
+          className="grid h-8 w-8 place-items-center rounded-lg text-sidebar-foreground/60 transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
         >
           <LogOut className="h-4 w-4" />
         </button>
@@ -156,6 +180,27 @@ function Lateral({ onIr }: { onIr?: () => void }) {
       <Navegacion {...(onIr ? { onIr } : {})} />
       <TarjetaUsuario />
     </div>
+  );
+}
+
+/** Cambio rápido claro/oscuro (más opciones en Mi perfil → Apariencia). */
+function BotonTema() {
+  const { tema } = usePreferencias();
+  const oscuro =
+    tema === "oscuro" ||
+    (tema === "sistema" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  return (
+    <button
+      type="button"
+      onClick={() => guardarPreferencias({ tema: oscuro ? "claro" : "oscuro" })}
+      aria-label={oscuro ? "Usar modo claro" : "Usar modo oscuro"}
+      title={oscuro ? "Modo claro" : "Modo oscuro"}
+      className="grid h-9 w-9 place-items-center rounded-xl border border-border bg-card text-foreground/80 transition hover:text-primary"
+    >
+      {oscuro ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
   );
 }
 
@@ -223,6 +268,8 @@ export function AdminShell({
             </span>
             <OrigenDatos />
             <div className="ml-auto flex items-center gap-2">
+              <BotonTema />
+              <Campana />
               {/* Solo en desarrollo: para revisar cómo ve el panel cada perfil. */}
               {import.meta.env.DEV && (
                 <label className="hidden items-center gap-2 text-[11px] text-muted-foreground sm:flex">
@@ -257,7 +304,7 @@ export function AdminShell({
         <main className="flex-1 px-4 py-6 md:px-8">
           <div className="mx-auto w-full max-w-[1360px] space-y-6">
             {/* Encabezado de la sección */}
-            <section className="relative overflow-hidden rounded-[28px] border border-primary/15 bg-gradient-to-br from-white via-white to-primary/[0.06] p-5 shadow-[0_18px_44px_-34px_rgba(76,29,149,0.55)] md:p-7">
+            <section className="relative overflow-hidden rounded-[28px] border border-primary/15 bg-gradient-to-br from-card via-card to-primary/[0.06] p-5 shadow-[0_18px_44px_-34px_rgba(76,29,149,0.55)] md:p-7">
               <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-primary-deep via-primary to-primary-glow" />
               <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/[0.06] blur-2xl" />
               <div className="relative flex flex-wrap items-start justify-between gap-4">

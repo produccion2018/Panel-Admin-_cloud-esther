@@ -10,6 +10,8 @@ import {
   Search,
   Trophy,
   UserCheck,
+  Handshake,
+  TimerOff,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -93,6 +95,10 @@ function DemosPage() {
   );
   const minutos30 = ingresos30.reduce((s, i) => s + i.minutos, 0);
   const convertidas = filas.filter(({ demo }) => demo.estado === "Convertida").length;
+  const expiraron30 = ingresos30.filter((i) => i.cierre === "Expiró").length;
+  const solicitudes30 = filas.flatMap(({ demo }) =>
+    (demo.solicitudes ?? []).filter((x) => new Date(x.fecha).getTime() >= desde),
+  );
   const altos = filas.filter(
     ({ demo, r }) =>
       r.interes === "Alto" && demo.estado !== "Convertida" && demo.estado !== "Descartada",
@@ -128,7 +134,7 @@ function DemosPage() {
         <Cargando />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 2xl:grid-cols-7">
             <KpiCard
               accent
               label="Cuentas de demo"
@@ -149,6 +155,19 @@ function DemosPage() {
               )}
               hint="Por ingreso al demo"
               icon={<Clock className="h-4 w-4" />}
+            />
+            <KpiCard
+              label="Agotaron el tiempo"
+              value={String(expiraron30)}
+              hint={`${ingresos30.length ? Math.round((expiraron30 / ingresos30.length) * 100) : 0}% de los ingresos`}
+              icon={<TimerOff className="h-4 w-4" />}
+            />
+            <KpiCard
+              label="Solicitudes comerciales"
+              value={String(solicitudes30.length)}
+              hint={`${solicitudes30.filter((x) => x.tipo === "Contratación").length} para contratar · 30 días`}
+              icon={<Handshake className="h-4 w-4" />}
+              tono="success"
             />
             <KpiCard
               label="Interés alto"
@@ -491,6 +510,26 @@ function DetalleDemo({ demo, puedeGestionar }: { demo: CuentaDemo; puedeGestiona
             </p>
           )}
         </div>
+
+        {/* Solicitudes */}
+        {(demo.solicitudes ?? []).length > 0 && (
+          <div>
+            <p className="text-sm font-bold">Pidió contacto desde el demo</p>
+            <ul className="mt-2 space-y-1.5">
+              {(demo.solicitudes ?? []).map((x) => (
+                <li
+                  key={x.fecha}
+                  className="flex items-center justify-between gap-2 rounded-xl bg-success/10 px-3 py-2 text-xs"
+                >
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-success">
+                    <Handshake className="h-3.5 w-3.5" /> {x.tipo}
+                  </span>
+                  <span className="text-muted-foreground">{fecha(x.fecha, true)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Módulos */}
         <div>

@@ -6,7 +6,6 @@ import type {
   EventoActividad,
   IngresoDemo,
   PlanConfig,
-  Ticket,
 } from "./tipos";
 
 /* Ubicación: src/lib/admin/datos-ejemplo.ts
@@ -312,6 +311,7 @@ export const DEMOS_INICIALES: CuentaDemo[] = [
     planElegido: "Plus",
     registrado: iso(hace(6)),
     ingresos: ingresos(5, 6, [30, 24, 30, 18, 12], ["Plus", "Enterprise"]),
+    solicitudes: [{ fecha: iso(hace(1, 2)), tipo: "Contratación" }],
     estado: "En curso",
     notas: "",
     responsable: null,
@@ -410,59 +410,10 @@ export const DEMOS_INICIALES: CuentaDemo[] = [
     planElegido: "Plus",
     registrado: iso(hace(0, 3)),
     ingresos: ingresos(1, 0, [18], ["Plus"]),
+    solicitudes: [{ fecha: iso(hace(0, 1)), tipo: "Información comercial" }],
     estado: "En curso",
     notas: "",
     responsable: null,
-  },
-];
-
-/* ───────────── Operación ───────────── */
-
-export const TICKETS_INICIALES: Ticket[] = [
-  {
-    id: "T-1042",
-    clinica: "Dental Care Patagonia",
-    asunto: "No pueden emitir facturas desde el módulo",
-    prioridad: "Alta",
-    estado: "Abierto",
-    asignado: "Soporte Técnico",
-    creado: iso(hace(0, 5)),
-  },
-  {
-    id: "T-1041",
-    clinica: "Clínica Dental Sonrisas",
-    asunto: "Consulta sobre importar pacientes desde Excel",
-    prioridad: "Media",
-    estado: "En curso",
-    asignado: "Soporte Técnico",
-    creado: iso(hace(1)),
-  },
-  {
-    id: "T-1040",
-    clinica: "Sonríe Clínicas",
-    asunto: "Agregar un usuario más (llegaron al límite)",
-    prioridad: "Media",
-    estado: "Abierto",
-    asignado: null,
-    creado: iso(hace(1, 6)),
-  },
-  {
-    id: "T-1039",
-    clinica: "Centro Odontológico Palermo",
-    asunto: "Configurar WhatsApp para recordatorios",
-    prioridad: "Baja",
-    estado: "Resuelto",
-    asignado: "Soporte Técnico",
-    creado: iso(hace(4)),
-  },
-  {
-    id: "T-1038",
-    clinica: "Consultorio Dr. Aguirre",
-    asunto: "Cambio de medio de pago",
-    prioridad: "Baja",
-    estado: "Resuelto",
-    asignado: "Secretaría",
-    creado: iso(hace(6)),
   },
 ];
 

@@ -14,14 +14,20 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAccesosRouteImport } from './routes/admin.accesos'
 import { Route as AdminActividadRouteImport } from './routes/admin.actividad'
+import { Route as AdminAuditoriaRouteImport } from './routes/admin.auditoria'
 import { Route as AdminClinicasRouteImport } from './routes/admin.clinicas'
 import { Route as AdminCuentaRouteImport } from './routes/admin.cuenta'
 import { Route as AdminDemosRouteImport } from './routes/admin.demos'
+import { Route as AdminGastosRouteImport } from './routes/admin.gastos'
 import { Route as AdminIaRouteImport } from './routes/admin.ia'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminNominaRouteImport } from './routes/admin.nomina'
+import { Route as AdminNotificacionesRouteImport } from './routes/admin.notificaciones'
 import { Route as AdminPagosRouteImport } from './routes/admin.pagos'
+import { Route as AdminPersonalRouteImport } from './routes/admin.personal'
 import { Route as AdminPlanesRouteImport } from './routes/admin.planes'
 import { Route as AdminRecuperarRouteImport } from './routes/admin.recuperar'
+import { Route as AdminReportesRouteImport } from './routes/admin.reportes'
 import { Route as AdminRestablecerRouteImport } from './routes/admin.restablecer'
 import { Route as AdminSoporteRouteImport } from './routes/admin.soporte'
 
@@ -50,6 +56,11 @@ const AdminActividadRoute = AdminActividadRouteImport.update({
   path: '/actividad',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAuditoriaRoute = AdminAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminClinicasRoute = AdminClinicasRouteImport.update({
   id: '/clinicas',
   path: '/clinicas',
@@ -65,6 +76,11 @@ const AdminDemosRoute = AdminDemosRouteImport.update({
   path: '/demos',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminGastosRoute = AdminGastosRouteImport.update({
+  id: '/gastos',
+  path: '/gastos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminIaRoute = AdminIaRouteImport.update({
   id: '/ia',
   path: '/ia',
@@ -75,9 +91,24 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNominaRoute = AdminNominaRouteImport.update({
+  id: '/nomina',
+  path: '/nomina',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNotificacionesRoute = AdminNotificacionesRouteImport.update({
+  id: '/notificaciones',
+  path: '/notificaciones',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPagosRoute = AdminPagosRouteImport.update({
   id: '/pagos',
   path: '/pagos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPersonalRoute = AdminPersonalRouteImport.update({
+  id: '/personal',
+  path: '/personal',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPlanesRoute = AdminPlanesRouteImport.update({
@@ -88,6 +119,11 @@ const AdminPlanesRoute = AdminPlanesRouteImport.update({
 const AdminRecuperarRoute = AdminRecuperarRouteImport.update({
   id: '/recuperar',
   path: '/recuperar',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportesRoute = AdminReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminRestablecerRoute = AdminRestablecerRouteImport.update({
@@ -106,14 +142,20 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/admin/accesos': typeof AdminAccesosRoute
   '/admin/actividad': typeof AdminActividadRoute
+  '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clinicas': typeof AdminClinicasRoute
   '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/demos': typeof AdminDemosRoute
+  '/admin/gastos': typeof AdminGastosRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/nomina': typeof AdminNominaRoute
+  '/admin/notificaciones': typeof AdminNotificacionesRoute
   '/admin/pagos': typeof AdminPagosRoute
+  '/admin/personal': typeof AdminPersonalRoute
   '/admin/planes': typeof AdminPlanesRoute
   '/admin/recuperar': typeof AdminRecuperarRoute
+  '/admin/reportes': typeof AdminReportesRoute
   '/admin/restablecer': typeof AdminRestablecerRoute
   '/admin/soporte': typeof AdminSoporteRoute
   '/admin/': typeof AdminIndexRoute
@@ -122,14 +164,20 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/accesos': typeof AdminAccesosRoute
   '/admin/actividad': typeof AdminActividadRoute
+  '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clinicas': typeof AdminClinicasRoute
   '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/demos': typeof AdminDemosRoute
+  '/admin/gastos': typeof AdminGastosRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/nomina': typeof AdminNominaRoute
+  '/admin/notificaciones': typeof AdminNotificacionesRoute
   '/admin/pagos': typeof AdminPagosRoute
+  '/admin/personal': typeof AdminPersonalRoute
   '/admin/planes': typeof AdminPlanesRoute
   '/admin/recuperar': typeof AdminRecuperarRoute
+  '/admin/reportes': typeof AdminReportesRoute
   '/admin/restablecer': typeof AdminRestablecerRoute
   '/admin/soporte': typeof AdminSoporteRoute
   '/admin': typeof AdminIndexRoute
@@ -140,14 +188,20 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/admin/accesos': typeof AdminAccesosRoute
   '/admin/actividad': typeof AdminActividadRoute
+  '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clinicas': typeof AdminClinicasRoute
   '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/demos': typeof AdminDemosRoute
+  '/admin/gastos': typeof AdminGastosRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/nomina': typeof AdminNominaRoute
+  '/admin/notificaciones': typeof AdminNotificacionesRoute
   '/admin/pagos': typeof AdminPagosRoute
+  '/admin/personal': typeof AdminPersonalRoute
   '/admin/planes': typeof AdminPlanesRoute
   '/admin/recuperar': typeof AdminRecuperarRoute
+  '/admin/reportes': typeof AdminReportesRoute
   '/admin/restablecer': typeof AdminRestablecerRoute
   '/admin/soporte': typeof AdminSoporteRoute
   '/admin/': typeof AdminIndexRoute
@@ -159,14 +213,20 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/accesos'
     | '/admin/actividad'
+    | '/admin/auditoria'
     | '/admin/clinicas'
     | '/admin/cuenta'
     | '/admin/demos'
+    | '/admin/gastos'
     | '/admin/ia'
     | '/admin/login'
+    | '/admin/nomina'
+    | '/admin/notificaciones'
     | '/admin/pagos'
+    | '/admin/personal'
     | '/admin/planes'
     | '/admin/recuperar'
+    | '/admin/reportes'
     | '/admin/restablecer'
     | '/admin/soporte'
     | '/admin/'
@@ -175,14 +235,20 @@ export interface FileRouteTypes {
     | '/'
     | '/admin/accesos'
     | '/admin/actividad'
+    | '/admin/auditoria'
     | '/admin/clinicas'
     | '/admin/cuenta'
     | '/admin/demos'
+    | '/admin/gastos'
     | '/admin/ia'
     | '/admin/login'
+    | '/admin/nomina'
+    | '/admin/notificaciones'
     | '/admin/pagos'
+    | '/admin/personal'
     | '/admin/planes'
     | '/admin/recuperar'
+    | '/admin/reportes'
     | '/admin/restablecer'
     | '/admin/soporte'
     | '/admin'
@@ -192,14 +258,20 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/accesos'
     | '/admin/actividad'
+    | '/admin/auditoria'
     | '/admin/clinicas'
     | '/admin/cuenta'
     | '/admin/demos'
+    | '/admin/gastos'
     | '/admin/ia'
     | '/admin/login'
+    | '/admin/nomina'
+    | '/admin/notificaciones'
     | '/admin/pagos'
+    | '/admin/personal'
     | '/admin/planes'
     | '/admin/recuperar'
+    | '/admin/reportes'
     | '/admin/restablecer'
     | '/admin/soporte'
     | '/admin/'
@@ -247,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminActividadRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/auditoria': {
+      id: '/admin/auditoria'
+      path: '/auditoria'
+      fullPath: '/admin/auditoria'
+      preLoaderRoute: typeof AdminAuditoriaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/clinicas': {
       id: '/admin/clinicas'
       path: '/clinicas'
@@ -268,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDemosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/gastos': {
+      id: '/admin/gastos'
+      path: '/gastos'
+      fullPath: '/admin/gastos'
+      preLoaderRoute: typeof AdminGastosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/ia': {
       id: '/admin/ia'
       path: '/ia'
@@ -282,11 +368,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/nomina': {
+      id: '/admin/nomina'
+      path: '/nomina'
+      fullPath: '/admin/nomina'
+      preLoaderRoute: typeof AdminNominaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/notificaciones': {
+      id: '/admin/notificaciones'
+      path: '/notificaciones'
+      fullPath: '/admin/notificaciones'
+      preLoaderRoute: typeof AdminNotificacionesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/pagos': {
       id: '/admin/pagos'
       path: '/pagos'
       fullPath: '/admin/pagos'
       preLoaderRoute: typeof AdminPagosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/personal': {
+      id: '/admin/personal'
+      path: '/personal'
+      fullPath: '/admin/personal'
+      preLoaderRoute: typeof AdminPersonalRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/planes': {
@@ -301,6 +408,13 @@ declare module '@tanstack/react-router' {
       path: '/recuperar'
       fullPath: '/admin/recuperar'
       preLoaderRoute: typeof AdminRecuperarRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reportes': {
+      id: '/admin/reportes'
+      path: '/reportes'
+      fullPath: '/admin/reportes'
+      preLoaderRoute: typeof AdminReportesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/restablecer': {
@@ -323,14 +437,20 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAccesosRoute: typeof AdminAccesosRoute
   AdminActividadRoute: typeof AdminActividadRoute
+  AdminAuditoriaRoute: typeof AdminAuditoriaRoute
   AdminClinicasRoute: typeof AdminClinicasRoute
   AdminCuentaRoute: typeof AdminCuentaRoute
   AdminDemosRoute: typeof AdminDemosRoute
+  AdminGastosRoute: typeof AdminGastosRoute
   AdminIaRoute: typeof AdminIaRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminNominaRoute: typeof AdminNominaRoute
+  AdminNotificacionesRoute: typeof AdminNotificacionesRoute
   AdminPagosRoute: typeof AdminPagosRoute
+  AdminPersonalRoute: typeof AdminPersonalRoute
   AdminPlanesRoute: typeof AdminPlanesRoute
   AdminRecuperarRoute: typeof AdminRecuperarRoute
+  AdminReportesRoute: typeof AdminReportesRoute
   AdminRestablecerRoute: typeof AdminRestablecerRoute
   AdminSoporteRoute: typeof AdminSoporteRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -339,14 +459,20 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAccesosRoute: AdminAccesosRoute,
   AdminActividadRoute: AdminActividadRoute,
+  AdminAuditoriaRoute: AdminAuditoriaRoute,
   AdminClinicasRoute: AdminClinicasRoute,
   AdminCuentaRoute: AdminCuentaRoute,
   AdminDemosRoute: AdminDemosRoute,
+  AdminGastosRoute: AdminGastosRoute,
   AdminIaRoute: AdminIaRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminNominaRoute: AdminNominaRoute,
+  AdminNotificacionesRoute: AdminNotificacionesRoute,
   AdminPagosRoute: AdminPagosRoute,
+  AdminPersonalRoute: AdminPersonalRoute,
   AdminPlanesRoute: AdminPlanesRoute,
   AdminRecuperarRoute: AdminRecuperarRoute,
+  AdminReportesRoute: AdminReportesRoute,
   AdminRestablecerRoute: AdminRestablecerRoute,
   AdminSoporteRoute: AdminSoporteRoute,
   AdminIndexRoute: AdminIndexRoute,

@@ -11,7 +11,21 @@ export const usePlanes = () => useQuery({ queryKey: ["planes"], queryFn: api.obt
 export const useClinicas = () => useQuery({ queryKey: ["clinicas"], queryFn: api.obtenerClinicas });
 export const useDemos = () =>
   useQuery({ queryKey: ["demos"], queryFn: api.obtenerDemos, refetchInterval: 60_000 });
-export const useTickets = () => useQuery({ queryKey: ["tickets"], queryFn: api.obtenerTickets });
+export const useTickets = () => useColeccion("ticketsSoporte");
+
+/** Colección de los módulos internos (personal, nómina, gastos, soporte…). */
+export function useColeccion<K extends keyof api.Colecciones>(k: K) {
+  return useQuery({ queryKey: [k], queryFn: () => api.listar(k) });
+}
+export const useNotificaciones = () =>
+  useQuery({
+    queryKey: ["notificaciones"],
+    queryFn: api.obtenerNotificaciones,
+    refetchInterval: 60_000,
+  });
+export const useSesionesPanel = () =>
+  useQuery({ queryKey: ["sesiones"], queryFn: api.obtenerSesiones });
+export const useIntentos = () => useQuery({ queryKey: ["intentos"], queryFn: api.obtenerIntentos });
 export const useActividad = () =>
   useQuery({ queryKey: ["actividad"], queryFn: api.obtenerActividad });
 export const useConsumoIA = () =>
@@ -34,4 +48,21 @@ export function useAccion<A, R = unknown>(
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "No se pudo guardar."),
   });
+}
+
+/** Guardar o borrar en una colección interna, con aviso y refresco. */
+export function useGuardarEn<K extends keyof api.Colecciones>(k: K, mensaje = "Cambios guardados") {
+  return useAccion(
+    (a: { item: api.Colecciones[K][number]; accion?: string }) =>
+      api.guardarEn(k, a.item, a.accion),
+    [k],
+    mensaje,
+  );
+}
+export function useBorrarDe<K extends keyof api.Colecciones>(k: K, mensaje = "Eliminado") {
+  return useAccion(
+    (a: { id: string; accion?: string }) => api.borrarDe(k, a.id, a.accion),
+    [k],
+    mensaje,
+  );
 }

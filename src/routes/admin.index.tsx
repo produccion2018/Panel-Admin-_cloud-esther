@@ -151,7 +151,9 @@ function AdminDashboard() {
         tono: "text-warning-foreground bg-warning/15",
       });
   }
-  const sinAsignar = (tickets.data ?? []).filter((t) => t.estado !== "Resuelto" && !t.asignado);
+  const sinAsignar = (tickets.data ?? []).filter(
+    (t) => t.estado !== "Resuelto" && t.estado !== "Cerrado" && !t.responsable,
+  );
   if (sinAsignar.length)
     tareas.push({
       texto: `${sinAsignar.length} ${sinAsignar.length === 1 ? "ticket" : "tickets"} sin asignar`,
@@ -379,15 +381,15 @@ function AdminDashboard() {
             </Seccion>
           </div>
 
-          {canAccess(role, "/admin/actividad") && (
+          {canAccess(role, "/admin/auditoria") && (
             <Seccion
               titulo="Actividad reciente"
               acciones={
                 <Link
-                  to="/admin/actividad"
+                  to="/admin/auditoria"
                   className="text-xs font-semibold text-primary hover:underline"
                 >
-                  Ver registro
+                  Ver auditoría
                 </Link>
               }
             >

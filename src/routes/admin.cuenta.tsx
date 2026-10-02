@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Check, Loader2, Monitor, Moon, ShieldCheck, Sun } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -12,7 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { actualizarPerfil, cambiarClave, problemaClave } from "@/lib/admin/api";
 import { fecha } from "@/lib/admin/formato";
+import {
+  COLORES_LATERAL,
+  guardarPreferencias,
+  usePreferencias,
+  type Tema,
+} from "@/lib/admin/preferencias";
 import { INACTIVIDAD_MS, actualizarUsuarioSesion, useSesionAdmin } from "@/lib/admin/sesion";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/cuenta")({
   head: () => ({
@@ -180,6 +187,76 @@ function AccountPage() {
           </div>
         </form>
       </Seccion>
+      <Apariencia />
     </AdminShell>
+  );
+}
+
+function Apariencia() {
+  const p = usePreferencias();
+  const temas: { id: Tema; label: string; icono: typeof Sun }[] = [
+    { id: "claro", label: "Claro", icono: Sun },
+    { id: "oscuro", label: "Oscuro", icono: Moon },
+    { id: "sistema", label: "Como el sistema", icono: Monitor },
+  ];
+  return (
+    <Seccion
+      titulo="Apariencia"
+      descripcion="Solo cambia cómo ves vos el panel en este navegador. No afecta al demo ni a las clínicas."
+    >
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
+          <p className="text-sm font-semibold">Modo</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {temas.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => guardarPreferencias({ tema: t.id })}
+                aria-pressed={p.tema === t.id}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-xs font-semibold transition",
+                  p.tema === t.id
+                    ? "border-primary bg-primary/[0.07] text-primary"
+                    : "border-border hover:border-primary/30",
+                )}
+              >
+                <t.icono className="h-5 w-5" />
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Color del menú lateral</p>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {COLORES_LATERAL.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => guardarPreferencias({ lateral: c.id })}
+                aria-pressed={p.lateral === c.id}
+                className="flex flex-col items-center gap-1.5 text-[11px] font-semibold"
+              >
+                <span
+                  className={cn(
+                    "grid h-11 w-11 place-items-center rounded-xl border-2 shadow-sm",
+                    p.lateral === c.id ? "border-primary" : "border-border",
+                  )}
+                  style={{ background: c.muestra }}
+                >
+                  {p.lateral === c.id && (
+                    <Check
+                      className={cn("h-4 w-4", c.id === "claro" ? "text-primary" : "text-white")}
+                    />
+                  )}
+                </span>
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Seccion>
   );
 }

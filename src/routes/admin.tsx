@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 
 import { RoleProvider } from "@/components/admin/role";
 import { Toaster } from "@/components/ui/sonner";
+import { marcarActividadSesion, registrarSalida } from "@/lib/admin/api";
+import { aplicarPreferencias, leerPreferencias } from "@/lib/admin/preferencias";
 import {
   INACTIVIDAD_MS,
   cerrarSesionAdmin,
@@ -26,21 +28,38 @@ function AdminLayout() {
   const [montado, setMontado] = useState(false);
   useEffect(() => setMontado(true), []);
 
+  // Apariencia propia del panel (claro/oscuro y color del menú).
+  useEffect(() => {
+    aplicarPreferencias();
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const cambio = () => leerPreferencias().tema === "sistema" && aplicarPreferencias();
+    mq.addEventListener("change", cambio);
+    return () => mq.removeEventListener("change", cambio);
+  }, []);
+
   // Cierre por inactividad (30 minutos sin usar el panel).
   useEffect(() => {
     if (!sesion) return;
     let ultimo = 0;
+    let ultimoAuditoria = 0;
     const actividad = () => {
       const ahora = Date.now();
       if (ahora - ultimo > 15_000) {
         ultimo = ahora;
         marcarActividad();
       }
+      // Última actividad de la sesión para la auditoría (cada minuto como máximo).
+      if (ahora - ultimoAuditoria > 60_000) {
+        ultimoAuditoria = ahora;
+        void marcarActividadSesion();
+      }
     };
     const eventos = ["pointerdown", "keydown", "scroll", "mousemove"] as const;
     eventos.forEach((e) => window.addEventListener(e, actividad, { passive: true }));
     const t = window.setInterval(() => {
-      if (Date.now() - inactivoDesde() > INACTIVIDAD_MS) cerrarSesionAdmin("inactividad");
+      if (Date.now() - inactivoDesde() > INACTIVIDAD_MS) {
+        void registrarSalida("Inactividad").finally(() => cerrarSesionAdmin("inactividad"));
+      }
     }, 30_000);
     return () => {
       eventos.forEach((e) => window.removeEventListener(e, actividad));

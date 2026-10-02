@@ -99,19 +99,11 @@ export type CuentaDemo = {
   notas: string;
   /** Persona del equipo que hace el seguimiento. */
   responsable: string | null;
+  /** Pedidos hechos desde el demo (al terminar los 30 minutos o desde los botones). */
+  solicitudes?: { fecha: string; tipo: "Información comercial" | "Contratación" }[];
 };
 
 /* ───────────── Operación ───────────── */
-
-export type Ticket = {
-  id: string;
-  clinica: string;
-  asunto: string;
-  prioridad: "Alta" | "Media" | "Baja";
-  estado: "Abierto" | "En curso" | "Resuelto";
-  asignado: string | null;
-  creado: string; // ISO
-};
 
 export type EventoActividad = {
   id: string;

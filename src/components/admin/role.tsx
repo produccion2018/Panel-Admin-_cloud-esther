@@ -41,7 +41,12 @@ export const sectionAccess: Record<string, AdminRole[]> = {
   "/admin/planes": ["owner", "partner"],
   "/admin/ia": ["owner", "partner", "support"],
   "/admin/soporte": ROLES,
-  "/admin/actividad": ["owner", "partner", "support"],
+  "/admin/personal": ["owner", "partner"],
+  "/admin/nomina": ["owner", "partner"],
+  "/admin/gastos": ["owner", "partner"],
+  "/admin/reportes": ["owner", "partner"],
+  "/admin/auditoria": ["owner", "partner", "support"],
+  "/admin/notificaciones": ROLES,
   "/admin/cuenta": ROLES,
   "/admin/accesos": ["owner"],
 };
@@ -56,6 +61,8 @@ export const permisos = {
   verImportes: (r: AdminRole) => r === "owner",
   editarPlanes: (r: AdminRole) => r === "owner",
   gestionarDemos: (r: AdminRole) => r !== "support",
+  /** Sueldos e importes de nómina: solo Dueño y Socio. */
+  verSueldos: (r: AdminRole) => r === "owner" || r === "partner",
   gestionarTickets: (r: AdminRole) => r === "owner" || r === "support" || r === "customer-care",
 };
 

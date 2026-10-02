@@ -100,7 +100,7 @@ export function KpiCard({
         "relative overflow-hidden rounded-[22px] border p-4 transition-transform hover:-translate-y-0.5",
         accent
           ? "border-transparent text-primary-foreground"
-          : "border-primary/20 bg-gradient-to-br from-white to-primary/[0.06]",
+          : "border-primary/20 bg-gradient-to-br from-card to-primary/[0.06]",
       )}
       style={
         accent

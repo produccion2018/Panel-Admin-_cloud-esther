@@ -96,3 +96,22 @@ export function minutosTexto(min: number) {
   const m = min % 60;
   return m ? `${h} h ${m} min` : `${h} h`;
 }
+
+/** Importe con su moneda (sueldos, gastos, pagos internos). */
+export function importe(n: number, moneda: string = "ARS") {
+  return `${moneda === "USD" ? "US$" : moneda === "ARS" ? "$" : moneda} ${miles(Math.round(n))}`;
+}
+
+/** Día de hoy en formato ISO (AAAA-MM-DD). */
+export const hoyISO = () => new Date().toISOString().slice(0, 10);
+
+/** Período actual (AAAA-MM). */
+export const periodoActual = () => new Date().toISOString().slice(0, 7);
+
+/** «2026-09» → «septiembre 2026». */
+export function periodoTexto(p: string) {
+  const d = new Date(`${p}-15T12:00:00`);
+  return Number.isNaN(d.getTime())
+    ? p
+    : d.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+}

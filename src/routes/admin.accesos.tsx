@@ -51,8 +51,13 @@ const MATRIZ: [string, string][] = [
   ["Pagos y cobranza", "/admin/pagos"],
   ["Planes y precios", "/admin/planes"],
   ["Consumo de IA", "/admin/ia"],
-  ["Tickets de soporte", "/admin/soporte"],
-  ["Registro de actividad", "/admin/actividad"],
+  ["Personal", "/admin/personal"],
+  ["Nómina y pagos", "/admin/nomina"],
+  ["Gastos y proveedores", "/admin/gastos"],
+  ["Soporte técnico", "/admin/soporte"],
+  ["Auditoría", "/admin/auditoria"],
+  ["Reportes", "/admin/reportes"],
+  ["Notificaciones", "/admin/notificaciones"],
   ["Mi perfil y contraseña", "/admin/cuenta"],
   ["Equipo y accesos", "/admin/accesos"],
 ];
@@ -61,6 +66,7 @@ const EXTRAS: [string, AdminRole[]][] = [
   ["Editar precios y límites", ["owner"]],
   ["Seguimiento de demos", ["owner", "partner", "customer-care"]],
   ["Gestionar tickets", ["owner", "support", "customer-care"]],
+  ["Ver sueldos y nómina", ["owner", "partner"]],
 ];
 
 function AccessPage() {
@@ -89,7 +95,7 @@ function AccessPage() {
         {ROLES.map((r) => (
           <div
             key={r}
-            className="rounded-[22px] border border-primary/20 bg-gradient-to-br from-white to-primary/[0.06] p-4"
+            className="rounded-[22px] border border-primary/20 bg-gradient-to-br from-card to-primary/[0.06] p-4"
             style={{ boxShadow: "var(--shadow-card)" }}
           >
             <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-primary/75">
