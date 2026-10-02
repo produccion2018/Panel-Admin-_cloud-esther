@@ -60,6 +60,8 @@ export function canAccess(role: AdminRole, path: string): boolean {
 export const permisos = {
   verImportes: (r: AdminRole) => r === "owner",
   editarPlanes: (r: AdminRole) => r === "owner",
+  /** Límites del período de prueba (duración, espera, cuentas sin límite). */
+  configurarDemo: (r: AdminRole) => r === "owner",
   gestionarDemos: (r: AdminRole) => r !== "support",
   /** Sueldos e importes de nómina: solo Dueño y Socio. */
   verSueldos: (r: AdminRole) => r === "owner" || r === "partner",

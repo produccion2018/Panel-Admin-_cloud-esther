@@ -27,6 +27,7 @@ import {
 } from "@/components/admin/bits";
 import { RestrictedView } from "@/components/admin/restricted";
 import { canAccess, permisos, useRole } from "@/components/admin/role";
+import { LimitesDemo, SinLimiteCuenta } from "@/components/admin/limites-demo";
 import { AdminShell } from "@/components/admin/shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,6 +184,8 @@ function DemosPage() {
               icon={<Trophy className="h-4 w-4" />}
             />
           </div>
+
+          <LimitesDemo />
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <Seccion titulo="Ingresos al demo por día" descripcion="Últimos 14 días">
@@ -510,6 +513,8 @@ function DetalleDemo({ demo, puedeGestionar }: { demo: CuentaDemo; puedeGestiona
             </p>
           )}
         </div>
+
+        <SinLimiteCuenta email={demo.email} />
 
         {/* Solicitudes */}
         {(demo.solicitudes ?? []).length > 0 && (

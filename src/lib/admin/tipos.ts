@@ -103,6 +103,16 @@ export type CuentaDemo = {
   solicitudes?: { fecha: string; tipo: "Información comercial" | "Contratación" }[];
 };
 
+/** Límites del período de prueba. Los maneja el dueño; el SaaS los lee de GET /demo/config. */
+export type ConfigDemo = {
+  limiteActivo: boolean;
+  minutos: number;
+  esperaMinutos: number;
+  avisoMinutos: number;
+  /** Correos de cuentas de demo sin límite de tiempo. */
+  exentos: string[];
+};
+
 /* ───────────── Operación ───────────── */
 
 export type EventoActividad = {

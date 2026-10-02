@@ -11,6 +11,8 @@ export const usePlanes = () => useQuery({ queryKey: ["planes"], queryFn: api.obt
 export const useClinicas = () => useQuery({ queryKey: ["clinicas"], queryFn: api.obtenerClinicas });
 export const useDemos = () =>
   useQuery({ queryKey: ["demos"], queryFn: api.obtenerDemos, refetchInterval: 60_000 });
+export const useConfigDemo = () =>
+  useQuery({ queryKey: ["config-demo"], queryFn: api.obtenerConfigDemo });
 export const useTickets = () => useColeccion("ticketsSoporte");
 
 /** Colección de los módulos internos (personal, nómina, gastos, soporte…). */

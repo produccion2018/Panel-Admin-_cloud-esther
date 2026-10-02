@@ -50,6 +50,7 @@ import type {
   AdminUser,
   Clinica,
   ConsumoIAMensual,
+  ConfigDemo,
   CuentaDemo,
   EventoActividad,
   PlanConfig,
@@ -85,6 +86,9 @@ import type {
                                           plan, cierre, expiración, solicitud) → el backend arma
                                           CuentaDemo (ingresos y solicitudes) y valida los 30 min
                                           y la espera para volver a entrar
+   GET    /admin/demo/config                                         → ConfigDemo
+   PUT    /admin/demo/config             ConfigDemo                  → ConfigDemo (límites del demo)
+   GET    /demo/config                   (público, lo lee el SaaS)   → ConfigDemo
    GET    /admin/notificaciones                                      → Notificacion[]
    PATCH  /admin/notificaciones          { ids | "todas", cambios }  → 204
    GET    /admin/auditoria/sesiones                                  → SesionPanel[] (con IP)
@@ -125,6 +129,15 @@ async function http<T>(metodo: string, ruta: string, cuerpo?: unknown): Promise<
 }
 
 /* ───────────── Base local (modo sin backend) ───────────── */
+
+/** Mismos valores por defecto que usa el SaaS si no hay configuración. */
+export const CONFIG_DEMO_INICIAL: ConfigDemo = {
+  limiteActivo: true,
+  minutos: 30,
+  esperaMinutos: 60,
+  avisoMinutos: 5,
+  exentos: [],
+};
 
 /** Colecciones de los módulos internos de la empresa (CRUD genérico). */
 export type Colecciones = {
@@ -170,6 +183,7 @@ type BaseLocal = {
   planes: PlanConfig[];
   clinicas: Clinica[];
   demos: CuentaDemo[];
+  configDemo: ConfigDemo;
   actividad: EventoActividad[];
   recuperaciones: { token: string; email: string; vence: number }[];
 };
@@ -197,6 +211,7 @@ async function db(): Promise<BaseLocal> {
         notificaciones: guardada.notificaciones ?? NOTIFICACIONES_INICIALES,
         sesiones: guardada.sesiones ?? SESIONES_INICIALES,
         intentos: guardada.intentos ?? INTENTOS_INICIALES,
+        configDemo: guardada.configDemo ?? CONFIG_DEMO_INICIAL,
       };
       return base;
     }
@@ -216,6 +231,7 @@ async function db(): Promise<BaseLocal> {
     planes: PLANES_INICIALES,
     clinicas: CLINICAS_INICIALES,
     demos: DEMOS_INICIALES,
+    configDemo: CONFIG_DEMO_INICIAL,
     actividad: ACTIVIDAD_INICIAL,
     recuperaciones: [],
   };
@@ -594,6 +610,21 @@ export async function enviarRecordatorioPago(id: string) {
 export async function obtenerDemos(): Promise<CuentaDemo[]> {
   if (CON_BACKEND) return http("GET", "/admin/demos");
   return copia((await db()).demos);
+}
+
+export async function obtenerConfigDemo(): Promise<ConfigDemo> {
+  if (CON_BACKEND) return http("GET", "/admin/demo/config");
+  return copia((await db()).configDemo);
+}
+
+export async function guardarConfigDemo(c: ConfigDemo, accion: string) {
+  if (CON_BACKEND) return http<ConfigDemo>("PUT", "/admin/demo/config", c);
+  await espera();
+  const b = await db();
+  b.configDemo = c;
+  guardar();
+  await registrar(accion, "demo");
+  return c;
 }
 
 export async function actualizarDemo(
